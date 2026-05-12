@@ -37,9 +37,11 @@ body {
 
     display: flex;
 
+    flex-direction: column;
+
     align-items: center;
 
-    gap: 14px;
+    gap: 18px;
 }
 
 .label {
@@ -50,20 +52,18 @@ body {
 
     font-weight: 600;
 
-    letter-spacing: 1px;
-
-    margin-right: 10px;
+    letter-spacing: 2px;
 }
 
 .card {
 
-    width: 140px;
+    width: 520px;
 
-    height: 170px;
+    height: 180px;
 
     background: #2a2a2a;
 
-    border-radius: 10px;
+    border-radius: 12px;
 
     display: flex;
 
@@ -95,11 +95,13 @@ body {
 
     color: #ffffff;
 
-    font-size: 84px;
+    font-size: 92px;
 
     font-weight: 700;
 
     line-height: 1;
+
+    letter-spacing: 2px;
 }
 
 </style>
@@ -115,11 +117,11 @@ body {
     </div>
 
     <div class="card">
-        <div class="number" id="left">00</div>
-    </div>
 
-    <div class="card">
-        <div class="number" id="right">00</div>
+        <div class="number" id="price">
+            Loading...
+        </div>
+
     </div>
 
 </div>
@@ -145,20 +147,11 @@ async function fetchPrice() {
 
         if (isNaN(price)) return;
 
-        const formatted =
-          Math.round(price).toString();
-
-        const left =
-          formatted.slice(0, 2);
-
-        const right =
-          formatted.slice(2);
-
-        document.getElementById('left').innerText =
-          left;
-
-        document.getElementById('right').innerText =
-          right;
+        document.getElementById('price').innerText =
+            price.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
 
     }
 
