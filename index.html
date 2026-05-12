@@ -1,70 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>NIFTY Live Price</title>
-
-<style>
-
-body {
-    margin: 0;
-    background: #0d1117;
-    color: white;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    height: 100vh;
-
-    font-family: Arial, sans-serif;
-}
-
-.card {
-    background: #161b22;
-    padding: 30px 50px;
-    border-radius: 16px;
-    text-align: center;
-
-    box-shadow: 0 0 20px rgba(0,0,0,0.4);
-}
-
-.title {
-    font-size: 24px;
-    margin-bottom: 10px;
-    color: #8b949e;
-}
-
-.price {
-    font-size: 64px;
-    font-weight: bold;
-    color: #58a6ff;
-}
-
-.note {
-    margin-top: 10px;
-    color: #8b949e;
-    font-size: 14px;
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="card">
-
-    <div class="title">NIFTY 50</div>
-
-    <div class="price" id="price">Loading...</div>
-
-    <div class="note">Auto refresh every 60 seconds</div>
-
-</div>
-
 <script>
 
 async function fetchPrice() {
@@ -72,92 +5,35 @@ async function fetchPrice() {
     try {
 
         const response = await fetch(
-          <!DOCTYPE html>
-<html lang="en">
-
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>NIFTY Live Price</title>
-
-<style>
-
-body {
-    margin: 0;
-    background: #0d1117;
-    color: white;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    height: 100vh;
-
-    font-family: Arial, sans-serif;
-}
-
-.card {
-    background: #161b22;
-    padding: 30px 50px;
-    border-radius: 16px;
-    text-align: center;
-
-    box-shadow: 0 0 20px rgba(0,0,0,0.4);
-}
-
-.title {
-    font-size: 24px;
-    margin-bottom: 10px;
-    color: #8b949e;
-}
-
-.price {
-    font-size: 64px;
-    font-weight: bold;
-    color: #58a6ff;
-}
-
-.note {
-    margin-top: 10px;
-    color: #8b949e;
-    font-size: 14px;
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="card">
-
-    <div class="title">NIFTY 50</div>
-
-    <div class="price" id="price">Loading...</div>
-
-    <div class="note">Auto refresh every 60 seconds</div>
-
-</div>
-
-<script>
-
-async function fetchPrice() {
-
-    try {
-
-        const response = await fetch(
-          'https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI'
+          'https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v7/finance/quote?symbols=%5ENSEI'
         );
 
-        const data = await response.json();
+        const text = await response.text();
+
+        const data = JSON.parse(text);
+
+        console.log(data);
+
+        const result =
+          data.quoteResponse.result;
+
+        if (!result || result.length === 0) {
+
+            document.getElementById('price').innerText =
+              'No Data';
+
+            return;
+        }
 
         const price =
-          data.chart.result[0].meta.regularMarketPrice;
+          result[0].regularMarketPrice;
 
         document.getElementById('price').innerText =
-          price.toFixed(2);
+          Number(price).toFixed(2);
 
     } catch (e) {
+
+        console.error(e);
 
         document.getElementById('price').innerText =
           'Unavailable';
@@ -169,31 +45,3 @@ fetchPrice();
 setInterval(fetchPrice, 60000);
 
 </script>
-
-</body>
-</html>
-        );
-
-        const data = await response.json();
-
-        const price =
-          data.chart.result[0].meta.regularMarketPrice;
-
-        document.getElementById('price').innerText =
-          price.toFixed(2);
-
-    } catch (e) {
-
-        document.getElementById('price').innerText =
-          'Unavailable';
-    }
-}
-
-fetchPrice();
-
-setInterval(fetchPrice, 60000);
-
-</script>
-
-</body>
-</html>
