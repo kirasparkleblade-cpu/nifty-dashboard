@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<title>NIFTY Dashboard</title>
+
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+
+<style>
+
+body {
+  margin: 0;
+  background: #111;
+}
+
+#chart {
+  width: 100vw;
+  height: 100vh;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="chart"></div>
+
+<script>
+
+const chart = LightweightCharts.createChart(
+  document.getElementById('chart'),
+  {
+    layout: {
+      background: { color: '#111' },
+      textColor: '#DDD',
+    },
+
+    grid: {
+      vertLines: { color: '#222' },
+      horzLines: { color: '#222' },
+    },
+
+    width: window.innerWidth,
+    height: window.innerHeight
+  }
+);
+
+const lineSeries = chart.addLineSeries();
+
+async function loadData() {
+
+  const response = await fetch(
+    'https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=5m'
+  );
+
+  const data = await response.json();
+
+  const result = data.chart.result[0];
+
+  const timestamps = result.timestamp;
+
+  const prices = result.indicators.quote[0].close;
+
+  const chartData = timestamps.map((t, i) => ({
+    time: t,
+    value: prices[i]
+  })).filter(x => x.value !== null);
+
+  lineSeries.setData(chartData);
+}
+
+loadData();
+
+setInterval(loadData, 60000);
+
+window.addEventListener('resize', () => {
+  chart.resize(window.innerWidth, window.innerHeight);
+});
+
+</script>
+
+</body>
+</html>
