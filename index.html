@@ -10,14 +10,18 @@
 
 <style>
 
-html, body {
+html,
+body {
 
     margin: 0;
     padding: 0;
 
-    background: transparent;
+    width: 100%;
+    height: 100%;
 
     overflow: hidden;
+
+    background: #000000;
 
     font-family: Georgia, serif;
 }
@@ -29,32 +33,37 @@ body {
     justify-content: center;
 
     align-items: center;
-
-    min-height: 100vh;
 }
 
 .widget {
 
+    width: 100vw;
+    height: 100vh;
+
     background: #000000;
 
-    border-radius: 36px;
+    border-radius: 0;
 
-    padding: 24px;
-
-    width: 720px;
+    padding: 4vh;
 
     box-sizing: border-box;
+
+    display: flex;
+
+    flex-direction: column;
 }
 
 .title-box {
 
-    background: #7a7a7a;
+    width: 32%;
+
+    height: 18%;
+
+    min-height: 90px;
+
+    background: #7d7d7d;
 
     border-radius: 28px;
-
-    width: 360px;
-
-    height: 110px;
 
     display: flex;
 
@@ -62,14 +71,14 @@ body {
 
     align-items: center;
 
-    margin-bottom: 18px;
+    margin-bottom: 3vh;
 }
 
 .title {
 
     color: #ffffff;
 
-    font-size: 64px;
+    font-size: clamp(42px, 5vw, 90px);
 
     font-weight: 500;
 
@@ -78,11 +87,11 @@ body {
 
 .price-box {
 
-    background: #7a7a7a;
+    flex: 1;
 
-    border-radius: 36px;
+    background: #7d7d7d;
 
-    height: 300px;
+    border-radius: 40px;
 
     display: flex;
 
@@ -90,51 +99,22 @@ body {
 
     align-items: center;
 
-    padding: 20px;
-
-    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .price {
 
     color: #ffffff;
 
-    font-size: 110px;
+    font-size: clamp(72px, 10vw, 180px);
 
     font-weight: 500;
 
     line-height: 1;
 
-    letter-spacing: 1px;
-}
+    white-space: nowrap;
 
-@media (max-width: 768px) {
-
-    .widget {
-
-        width: 95vw;
-    }
-
-    .title-box {
-
-        width: 50%;
-        height: 80px;
-    }
-
-    .title {
-
-        font-size: 42px;
-    }
-
-    .price-box {
-
-        height: 180px;
-    }
-
-    .price {
-
-        font-size: 58px;
-    }
+    font-variant-numeric: lining-nums tabular-nums;
 }
 
 </style>
