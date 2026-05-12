@@ -26,102 +26,45 @@ body {
 
     display: inline-block;
 
-    padding: 12px;
+    padding: 8px;
+
+    background: #191919;
 }
 
-.card {
-
-    display: inline-block;
-
-    background: #131722;
-
-    border: 1px solid #2a2e39;
-
-    border-radius: 16px;
-
-    width: 340px;
-
-    padding: 28px;
-
-    box-shadow:
-      0 0 30px rgba(0,0,0,0.45);
-}
-
-.header {
+.container {
 
     display: flex;
 
-    justify-content: space-between;
+    align-items: baseline;
 
-    align-items: center;
-
-    margin-bottom: 16px;
+    gap: 12px;
 }
 
 .symbol {
 
-    color: white;
+    color: #ffffff;
 
-    font-size: 22px;
+    font-size: 18px;
 
     font-weight: 600;
 }
 
-.badge {
-
-    background: #2962ff;
-
-    color: white;
-
-    padding: 4px 10px;
-
-    border-radius: 8px;
-
-    font-size: 12px;
-}
-
 .price {
 
-    color: white;
+    color: #ffffff;
 
-    font-size: 52px;
+    font-size: 32px;
 
     font-weight: 700;
-
-    margin-top: 10px;
 }
 
-.label {
+.live {
 
-    color: #787b86;
-
-    margin-top: 8px;
+    color: #ffffff;
 
     font-size: 14px;
-}
 
-.status {
-
-    margin-top: 20px;
-
-    color: #26a69a;
-
-    font-size: 14px;
-}
-
-.dot {
-
-    width: 10px;
-
-    height: 10px;
-
-    background: #26a69a;
-
-    border-radius: 50%;
-
-    display: inline-block;
-
-    margin-right: 6px;
+    opacity: 0.7;
 }
 
 </style>
@@ -130,27 +73,18 @@ body {
 
 <body>
 
-<div class="card">
+<div class="container">
 
-    <div class="header">
-
-        <div class="symbol">NIFTY 50</div>
-
-        <div class="badge">LIVE</div>
-
+    <div class="symbol">
+        NIFTY 50
     </div>
 
     <div class="price" id="price">
         Loading...
     </div>
 
-    <div class="label">
-        NSE Index
-    </div>
-
-    <div class="status">
-        <span class="dot"></span>
-        Auto refresh 1m
+    <div class="live">
+        LIVE
     </div>
 
 </div>
