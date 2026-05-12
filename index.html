@@ -72,7 +72,7 @@ async function fetchPrice() {
     try {
 
         const response = await fetch(
-          'https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI'
+          'https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI'
         );
 
         const data = await response.json();
