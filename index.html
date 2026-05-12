@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>NIFTY Widget</title>
+<title>NIFTY Minimal</title>
 
 <style>
 
@@ -15,7 +15,7 @@ html, body {
     margin: 0;
     padding: 0;
 
-    background: transparent;
+    background: #191919;
 
     overflow: hidden;
 
@@ -24,47 +24,82 @@ html, body {
 
 body {
 
-    display: inline-block;
+    display: flex;
 
-    padding: 8px;
+    justify-content: center;
 
-    background: #191919;
+    align-items: center;
+
+    min-height: 100vh;
 }
 
-.container {
+.wrapper {
 
     display: flex;
 
-    align-items: baseline;
+    align-items: center;
 
-    gap: 12px;
+    gap: 14px;
 }
 
-.symbol {
+.label {
 
     color: #ffffff;
 
-    font-size: 18px;
+    font-size: 28px;
 
     font-weight: 600;
+
+    letter-spacing: 1px;
+
+    margin-right: 10px;
 }
 
-.price {
+.card {
+
+    width: 140px;
+
+    height: 170px;
+
+    background: #2a2a2a;
+
+    border-radius: 10px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    position: relative;
+}
+
+.card::after {
+
+    content: '';
+
+    position: absolute;
+
+    top: 50%;
+
+    left: 0;
+
+    width: 100%;
+
+    height: 1px;
+
+    background: #1d1d1d;
+}
+
+.number {
 
     color: #ffffff;
 
-    font-size: 32px;
+    font-size: 84px;
 
     font-weight: 700;
-}
 
-.live {
-
-    color: #ffffff;
-
-    font-size: 14px;
-
-    opacity: 0.7;
+    line-height: 1;
 }
 
 </style>
@@ -73,18 +108,18 @@ body {
 
 <body>
 
-<div class="container">
+<div class="wrapper">
 
-    <div class="symbol">
-        NIFTY 50
+    <div class="label">
+        NIFTY
     </div>
 
-    <div class="price" id="price">
-        Loading...
+    <div class="card">
+        <div class="number" id="left">00</div>
     </div>
 
-    <div class="live">
-        LIVE
+    <div class="card">
+        <div class="number" id="right">00</div>
     </div>
 
 </div>
@@ -108,25 +143,28 @@ async function fetchPrice() {
 
         const price = parseFloat(columns[1]);
 
-        if (isNaN(price)) {
+        if (isNaN(price)) return;
 
-            document.getElementById('price').innerText =
-              'No Data';
+        const formatted =
+          Math.round(price).toString();
 
-            return;
-        }
+        const left =
+          formatted.slice(0, 2);
 
-        document.getElementById('price').innerText =
-            price.toFixed(2);
+        const right =
+          formatted.slice(2);
+
+        document.getElementById('left').innerText =
+          left;
+
+        document.getElementById('right').innerText =
+          right;
 
     }
 
     catch (e) {
 
         console.error(e);
-
-        document.getElementById('price').innerText =
-            'Unavailable';
     }
 }
 
