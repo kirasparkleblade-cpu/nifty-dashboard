@@ -67,21 +67,20 @@ body {
 
 <script>
 
+const API_KEY = 'YOUR_API_KEY';
+
 async function fetchPrice() {
 
     try {
 
         const response = await fetch(
-          'https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v7/finance/quote?symbols=%5ENSEI'
+          `https://finnhub.io/api/v1/quote?symbol=%5ENSEI&token=${API_KEY}`
         );
 
         const data = await response.json();
 
-        const price =
-          data.quoteResponse.result[0].regularMarketPrice;
-
         document.getElementById('price').innerText =
-          price.toFixed(2);
+          data.c.toFixed(2);
 
     } catch (e) {
 
