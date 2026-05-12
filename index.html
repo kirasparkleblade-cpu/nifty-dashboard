@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>NIFTY Dashboard</title>
+  <meta charset="UTF-8" />
 
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <title>NIFTY Dashboard</title>
 
-<style>
-body {
-  margin: 0;
-  background: #111;
-}
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
-#chart {
-  width: 100vw;
-  height: 100vh;
-}
-</style>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+    }
+
+    #chart {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
 </head>
 
 <body>
@@ -25,33 +27,43 @@ body {
 
 <script>
 
-const chart = LightweightCharts.createChart(
-  document.getElementById('chart'),
-  {
+const chartContainer = document.getElementById('chart');
+
+const chart = LightweightCharts.createChart(chartContainer, {
+    width: window.innerWidth,
+    height: window.innerHeight,
+
     layout: {
-      background: { color: '#111' },
-      textColor: '#DDD',
+        background: {
+            color: '#111111'
+        },
+        textColor: '#d1d4dc',
     },
 
-    width: window.innerWidth,
-    height: window.innerHeight
-  }
-);
+    grid: {
+        vertLines: {
+            color: '#222'
+        },
+        horzLines: {
+            color: '#222'
+        },
+    },
+});
 
-const areaSeries = chart.addAreaSeries();
+const series = chart.addLineSeries();
 
-areaSeries.setData([
-  { time: '2024-01-01', value: 21500 },
-  { time: '2024-01-02', value: 21600 },
-  { time: '2024-01-03', value: 21450 },
-  { time: '2024-01-04', value: 21720 },
-  { time: '2024-01-05', value: 21810 },
-  { time: '2024-01-06', value: 21950 },
-  { time: '2024-01-07', value: 22100 }
+series.setData([
+    { time: '2024-01-01', value: 21000 },
+    { time: '2024-01-02', value: 21200 },
+    { time: '2024-01-03', value: 21100 },
+    { time: '2024-01-04', value: 21400 },
+    { time: '2024-01-05', value: 21600 },
+    { time: '2024-01-06', value: 21550 },
+    { time: '2024-01-07', value: 21720 }
 ]);
 
 window.addEventListener('resize', () => {
-  chart.resize(window.innerWidth, window.innerHeight);
+    chart.resize(window.innerWidth, window.innerHeight);
 });
 
 </script>
