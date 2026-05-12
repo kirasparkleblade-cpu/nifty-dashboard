@@ -1,12 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-  <meta charset="UTF-8" />
-
-  <title>NIFTY Dashboard</title>
-
-  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <meta charset="UTF-8">
+  <title>NIFTY TradingView</title>
 
   <style>
     body {
@@ -14,58 +10,41 @@
       background: #111;
     }
 
-    #chart {
+    .tradingview-widget-container {
       width: 100vw;
       height: 100vh;
+    }
+
+    #tradingview_chart {
+      width: 100%;
+      height: 100%;
     }
   </style>
 </head>
 
 <body>
 
-<div id="chart"></div>
+<div class="tradingview-widget-container">
+  <div id="tradingview_chart"></div>
+</div>
+
+<script src="https://s3.tradingview.com/tv.js"></script>
 
 <script>
-
-const chartContainer = document.getElementById('chart');
-
-const chart = LightweightCharts.createChart(chartContainer, {
-    width: window.innerWidth,
-    height: window.innerHeight,
-
-    layout: {
-        background: {
-            color: '#111111'
-        },
-        textColor: '#d1d4dc',
-    },
-
-    grid: {
-        vertLines: {
-            color: '#222'
-        },
-        horzLines: {
-            color: '#222'
-        },
-    },
+new TradingView.widget({
+  "autosize": true,
+  "symbol": "INDEX:NKY",
+  "interval": "15",
+  "timezone": "Asia/Kolkata",
+  "theme": "dark",
+  "style": "1",
+  "locale": "en",
+  "toolbar_bg": "#111111",
+  "enable_publishing": false,
+  "hide_side_toolbar": false,
+  "allow_symbol_change": true,
+  "container_id": "tradingview_chart"
 });
-
-const series = chart.addLineSeries();
-
-series.setData([
-    { time: '2024-01-01', value: 21000 },
-    { time: '2024-01-02', value: 21200 },
-    { time: '2024-01-03', value: 21100 },
-    { time: '2024-01-04', value: 21400 },
-    { time: '2024-01-05', value: 21600 },
-    { time: '2024-01-06', value: 21550 },
-    { time: '2024-01-07', value: 21720 }
-]);
-
-window.addEventListener('resize', () => {
-    chart.resize(window.innerWidth, window.innerHeight);
-});
-
 </script>
 
 </body>
