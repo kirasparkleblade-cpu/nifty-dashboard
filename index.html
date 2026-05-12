@@ -40,9 +40,10 @@ body {
     width: 100vw;
     height: 100vh;
 
-    background: #000000;
-
-    border-radius: 0;
+    background:
+      radial-gradient(circle at top,
+      #1a1a1a 0%,
+      #000000 70%);
 
     padding: 4vh;
 
@@ -51,19 +52,26 @@ body {
     display: flex;
 
     flex-direction: column;
+
+    gap: 3vh;
 }
 
 .title-box {
 
-    width: 32%;
+    width: 34%;
 
     height: 18%;
 
-    min-height: 90px;
+    min-height: 100px;
 
-    background: #7d7d7d;
+    background:
+      linear-gradient(
+        180deg,
+        #8a8a8a 0%,
+        #6d6d6d 100%
+      );
 
-    border-radius: 28px;
+    border-radius: 34px;
 
     display: flex;
 
@@ -71,27 +79,37 @@ body {
 
     align-items: center;
 
-    margin-bottom: 3vh;
+    box-shadow:
+      inset 0 2px 0 rgba(255,255,255,0.15),
+      0 10px 30px rgba(0,0,0,0.55);
 }
 
 .title {
 
     color: #ffffff;
 
-    font-size: clamp(42px, 5vw, 90px);
+    font-size: clamp(54px, 6vw, 100px);
 
     font-weight: 500;
 
-    line-height: 1;
+    letter-spacing: 1px;
+
+    text-shadow:
+      0 2px 4px rgba(0,0,0,0.5);
 }
 
 .price-box {
 
     flex: 1;
 
-    background: #7d7d7d;
+    background:
+      linear-gradient(
+        180deg,
+        #8a8a8a 0%,
+        #747474 100%
+      );
 
-    border-radius: 40px;
+    border-radius: 44px;
 
     display: flex;
 
@@ -100,13 +118,17 @@ body {
     align-items: center;
 
     overflow: hidden;
+
+    box-shadow:
+      inset 0 2px 0 rgba(255,255,255,0.12),
+      0 15px 40px rgba(0,0,0,0.6);
 }
 
 .price {
 
     color: #ffffff;
 
-    font-size: clamp(72px, 10vw, 180px);
+    font-size: clamp(120px, 15vw, 280px);
 
     font-weight: 500;
 
@@ -115,6 +137,11 @@ body {
     white-space: nowrap;
 
     font-variant-numeric: lining-nums tabular-nums;
+
+    letter-spacing: 3px;
+
+    text-shadow:
+      0 6px 10px rgba(0,0,0,0.45);
 }
 
 </style>
