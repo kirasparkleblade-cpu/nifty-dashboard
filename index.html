@@ -8,6 +8,11 @@
 
 <title>NIFTY Widget</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
 <style>
 
 html,
@@ -23,11 +28,7 @@ body {
 
     background: #191919;
 
-    font-family:
-      Inter,
-      -apple-system,
-      BlinkMacSystemFont,
-      sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 body {
@@ -60,31 +61,33 @@ body {
 
     justify-content: center;
 
-    gap: 28px;
+    gap: 22px;
 }
 
 .label {
 
-    color: #8e8e93;
+    color: #8f8f95;
 
-    font-size: clamp(22px, 2vw, 36px);
+    font-size: clamp(18px, 1.5vw, 28px);
 
-    font-weight: 600;
+    font-weight: 500;
 
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
 }
 
 .price {
 
     color: #ffffff;
 
-    font-size: clamp(90px, 16vw, 240px);
+    font-size: clamp(56px, 8vw, 120px);
 
     font-weight: 700;
 
-    line-height: 0.95;
+    line-height: 1;
 
-    letter-spacing: -4px;
+    letter-spacing: -2px;
 
     font-variant-numeric:
       tabular-nums lining-nums;
@@ -98,17 +101,17 @@ body {
 
     gap: 10px;
 
-    color: #8e8e93;
+    color: #7d7d82;
 
-    font-size: clamp(16px, 1.2vw, 22px);
+    font-size: clamp(14px, 1vw, 18px);
 
     font-weight: 500;
 }
 
 .dot {
 
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
 
     background: #22c55e;
 
