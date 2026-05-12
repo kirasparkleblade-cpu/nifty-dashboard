@@ -11,58 +11,113 @@
 <style>
 
 body {
+
     margin: 0;
+
     background: #0d1117;
 
-    color: white;
-
     display: flex;
+
     justify-content: center;
+
     align-items: center;
 
     height: 100vh;
 
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .card {
 
-    background: #161b22;
+    background: #131722;
 
-    padding: 30px 50px;
+    border: 1px solid #2a2e39;
 
     border-radius: 16px;
 
-    text-align: center;
+    width: 340px;
 
-    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    padding: 28px;
+
+    box-shadow:
+      0 0 30px rgba(0,0,0,0.45);
 }
 
-.title {
+.header {
 
-    font-size: 24px;
+    display: flex;
 
-    margin-bottom: 10px;
+    justify-content: space-between;
 
-    color: #8b949e;
+    align-items: center;
+
+    margin-bottom: 16px;
+}
+
+.symbol {
+
+    color: white;
+
+    font-size: 22px;
+
+    font-weight: 600;
+}
+
+.badge {
+
+    background: #2962ff;
+
+    color: white;
+
+    padding: 4px 10px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
 }
 
 .price {
 
-    font-size: 64px;
+    color: white;
 
-    font-weight: bold;
+    font-size: 52px;
 
-    color: #58a6ff;
-}
-
-.note {
+    font-weight: 700;
 
     margin-top: 10px;
+}
 
-    color: #8b949e;
+.label {
+
+    color: #787b86;
+
+    margin-top: 8px;
 
     font-size: 14px;
+}
+
+.status {
+
+    margin-top: 20px;
+
+    color: #26a69a;
+
+    font-size: 14px;
+}
+
+.dot {
+
+    width: 10px;
+
+    height: 10px;
+
+    background: #26a69a;
+
+    border-radius: 50%;
+
+    display: inline-block;
+
+    margin-right: 6px;
 }
 
 </style>
@@ -73,41 +128,58 @@ body {
 
 <div class="card">
 
-    <div class="title">NIFTY 50</div>
+    <div class="header">
 
-    <div class="price" id="price">Loading...</div>
+        <div class="symbol">NIFTY 50</div>
 
-    <div class="note">Auto refresh every 60 seconds</div>
+        <div class="badge">LIVE</div>
+
+    </div>
+
+    <div class="price" id="price">
+        Loading...
+    </div>
+
+    <div class="label">
+        NSE Index
+    </div>
+
+    <div class="status">
+        <span class="dot"></span>
+        Auto refresh 1m
+    </div>
 
 </div>
 
 <script>
 
+const CSV_URL =
+'https://docs.google.com/spreadsheets/d/e/2PACX-1vSnV2YkleLyZu7oH4sRkaSV1k1KToH05LgWDi4xR0wcKquNeuI8134CcF3n8O1OlbvAIedrQq4XvS4f/pub?output=csv';
+
 async function fetchPrice() {
 
     try {
 
-        const response = await fetch(
-            'https://api.allorigins.win/raw?url=https://query1.finance.yahoo.com/v7/finance/quote?symbols=%5ENSEI'
-        );
+        const response = await fetch(CSV_URL);
 
         const text = await response.text();
 
-        const data = JSON.parse(text);
+        const rows = text.trim().split('\n');
 
-        const result = data.quoteResponse.result;
+        const columns = rows[0].split(',');
 
-        if (!result || result.length === 0) {
+        const price = parseFloat(columns[1]);
 
-            document.getElementById('price').innerText = 'No Data';
+        if (isNaN(price)) {
+
+            document.getElementById('price').innerText =
+              'No Data';
 
             return;
         }
 
-        const price = result[0].regularMarketPrice;
-
         document.getElementById('price').innerText =
-            Number(price).toFixed(2);
+            price.toFixed(2);
 
     }
 
