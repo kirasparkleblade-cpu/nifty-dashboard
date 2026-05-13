@@ -8,7 +8,7 @@
 <meta name="viewport"
 content="width=device-width, initial-scale=1.0">
 
-<title>Indian Market News</title>
+<title>Indian Stock Market News</title>
 
 <link rel="preconnect"
 href="https://fonts.googleapis.com">
@@ -59,30 +59,33 @@ body {
     width: 100%;
     height: 100%;
 
-    padding: 22px;
+    padding: 20px;
 
     overflow-y: auto;
 
-    border-radius: 28px;
+    border-radius: 30px;
 
     background:
-    rgba(255,255,255,0.82);
+    rgba(255,255,255,0.84);
 
     backdrop-filter:
     blur(18px);
 
     border:
-    1px solid rgba(0,0,0,0.06);
+    1px solid rgba(0,0,0,0.05);
+
+    box-shadow:
+    0 10px 30px rgba(0,0,0,0.04);
 }
 
 .widget::-webkit-scrollbar {
 
-    width: 5px;
+    width: 4px;
 }
 
 .widget::-webkit-scrollbar-thumb {
 
-    background: #d6d6d6;
+    background: #d5d5d5;
 
     border-radius: 999px;
 }
@@ -95,7 +98,7 @@ body {
 
     align-items: center;
 
-    margin-bottom: 26px;
+    margin-bottom: 24px;
 }
 
 .title {
@@ -104,9 +107,9 @@ body {
 
     font-weight: 800;
 
-    color: #6d6d72;
-
     letter-spacing: 1.5px;
+
+    color: #6d6d72;
 }
 
 .live {
@@ -117,9 +120,9 @@ body {
 
     gap: 8px;
 
-    color: #8a8a90;
-
     font-size: 12px;
+
+    color: #8d8d92;
 
     font-weight: 700;
 }
@@ -132,22 +135,46 @@ body {
     border-radius: 50%;
 
     background: #22c55e;
+
+    animation:
+    pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+
+    0% {
+
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+
+        opacity: 0.5;
+        transform: scale(1.5);
+    }
+
+    100% {
+
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .section {
 
-    margin-bottom: 28px;
+    margin-bottom: 26px;
 }
 
 .section-title {
 
-    font-size: 12px;
+    font-size: 11px;
 
-    font-weight: 700;
-
-    color: #8a8a90;
+    font-weight: 800;
 
     letter-spacing: 1px;
+
+    color: #9a9aa0;
 
     text-transform: uppercase;
 
@@ -164,7 +191,7 @@ body {
 
     margin-bottom: 12px;
 
-    border-radius: 20px;
+    border-radius: 22px;
 
     background:
     rgba(255,255,255,0.92);
@@ -185,13 +212,13 @@ body {
     0 10px 24px rgba(0,0,0,0.06);
 }
 
-.news-headline {
+.news-title {
 
     font-size: 15px;
 
     font-weight: 700;
 
-    line-height: 1.5;
+    line-height: 1.45;
 
     color: #111111;
 
@@ -211,7 +238,7 @@ body {
 
     font-size: 12px;
 
-    color: #8c8c92;
+    color: #8f8f95;
 }
 
 .tag {
@@ -222,18 +249,20 @@ body {
 
     background: #f3f3f3;
 
-    color: #666666;
+    color: #6f6f74;
 
-    font-size: 11px;
+    font-size: 10px;
 
-    font-weight: 700;
+    font-weight: 800;
+
+    letter-spacing: 0.5px;
 }
 
 .loading {
 
-    font-size: 14px;
+    color: #777;
 
-    color: #777777;
+    font-size: 14px;
 }
 
 </style>
@@ -247,7 +276,7 @@ body {
 <div class="topbar">
 
 <div class="title">
-INDIAN MARKET NEWS
+INDIAN STOCK MARKET
 </div>
 
 <div class="live">
@@ -263,13 +292,13 @@ INDIAN MARKET NEWS
 <div class="section">
 
 <div class="section-title">
-MARKET + NIFTY
+NIFTY + BANKNIFTY
 </div>
 
-<div id="marketNews">
+<div id="market-news">
 
 <div class="loading">
-Loading latest market news...
+Loading market news...
 </div>
 
 </div>
@@ -279,13 +308,29 @@ Loading latest market news...
 <div class="section">
 
 <div class="section-title">
-EARNINGS RESULTS
+EARNINGS + RESULTS
 </div>
 
-<div id="earningsNews">
+<div id="earnings-news">
 
 <div class="loading">
-Loading earnings updates...
+Loading earnings...
+</div>
+
+</div>
+
+</div>
+
+<div class="section">
+
+<div class="section-title">
+STOCK MOVERS
+</div>
+
+<div id="stocks-news">
+
+<div class="loading">
+Loading stocks...
 </div>
 
 </div>
@@ -298,31 +343,40 @@ Loading earnings updates...
 
 const marketURL =
 
-'https://api.rss2json.com/v1/api.json?rss_url=' +
-
-encodeURIComponent(
-
 'https://news.google.com/rss/search?q=' +
 
-'NIFTY+BANKNIFTY+Sensex+Indian+stock+market&hl=en-IN&gl=IN&ceid=IN:en'
-
-);
+'NIFTY+BANKNIFTY+Sensex+Indian+stock+market&hl=en-IN&gl=IN&ceid=IN:en';
 
 const earningsURL =
 
-'https://api.rss2json.com/v1/api.json?rss_url=' +
+'https://news.google.com/rss/search?q=' +
 
-encodeURIComponent(
+'India+stocks+earnings+results+NSE+BSE&hl=en-IN&gl=IN&ceid=IN:en';
+
+const stocksURL =
 
 'https://news.google.com/rss/search?q=' +
 
-'India+stocks+earnings+results+NSE+BSE&hl=en-IN&gl=IN&ceid=IN:en'
+'NSE+stocks+top+gainers+top+losers+Indian+market&hl=en-IN&gl=IN&ceid=IN:en';
 
-);
+function rssToJson(url) {
+
+    return
+
+    'https://api.rss2json.com/v1/api.json?rss_url=' +
+
+    encodeURIComponent(url) +
+
+    '&t=' +
+
+    Date.now();
+}
 
 function timeAgo(date) {
 
-    const seconds = Math.floor(
+    const seconds =
+
+    Math.floor(
 
         (new Date() - new Date(date)) / 1000
     );
@@ -335,7 +389,9 @@ function timeAgo(date) {
 
     for (const key in intervals) {
 
-        const interval = Math.floor(
+        const interval =
+
+        Math.floor(
 
             seconds / intervals[key]
         );
@@ -343,9 +399,13 @@ function timeAgo(date) {
         if (interval >= 1) {
 
             return interval +
+
             ' ' +
+
             key +
+
             (interval > 1 ? 's' : '') +
+
             ' ago';
         }
     }
@@ -353,7 +413,7 @@ function timeAgo(date) {
     return 'Just now';
 }
 
-async function loadSection(
+async function loadNews(
     url,
     containerId,
     tag
@@ -362,17 +422,16 @@ async function loadSection(
     try {
 
         const response =
-        await fetch(
 
-            url +
-            '&t=' +
-            Date.now()
+        await fetch(
+            rssToJson(url)
         );
 
         const data =
         await response.json();
 
         const container =
+
         document.getElementById(
             containerId
         );
@@ -382,25 +441,22 @@ async function loadSection(
         if (!data.items ||
             data.items.length === 0) {
 
-            container.innerHTML = `
+            container.innerHTML =
 
-                <div class="loading">
-
-                    No news available
-
-                </div>
-
-            `;
+            '<div class="loading">No news available</div>';
 
             return;
         }
 
         data.items
-        .slice(0, 6)
+        .slice(0, 5)
         .forEach(item => {
 
             const card =
             document.createElement('a');
+
+            card.className =
+            'news-card';
 
             card.href =
             item.link;
@@ -408,12 +464,9 @@ async function loadSection(
             card.target =
             '_blank';
 
-            card.className =
-            'news-card';
-
             card.innerHTML = `
 
-                <div class="news-headline">
+                <div class="news-title">
 
                     ${item.title}
 
@@ -444,34 +497,34 @@ async function loadSection(
 
     catch (error) {
 
-        console.error(error);
-
         document.getElementById(
             containerId
-        ).innerHTML = `
+        ).innerHTML =
 
-            <div class="loading">
+        '<div class="loading">Unable to load news</div>';
 
-                Unable to load news
-
-            </div>
-
-        `;
+        console.error(error);
     }
 }
 
 function refreshNews() {
 
-    loadSection(
+    loadNews(
         marketURL,
-        'marketNews',
+        'market-news',
         'MARKET'
     );
 
-    loadSection(
+    loadNews(
         earningsURL,
-        'earningsNews',
+        'earnings-news',
         'EARNINGS'
+    );
+
+    loadNews(
+        stocksURL,
+        'stocks-news',
+        'STOCKS'
     );
 }
 
