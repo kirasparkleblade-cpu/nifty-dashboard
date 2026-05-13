@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Trading Checklist</title>
+
+<link rel="preconnect"
+href="https://fonts.googleapis.com">
+
+<link rel="preconnect"
+href="https://fonts.gstatic.com"
+crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html,
+body{
+
+    width:100%;
+    height:100%;
+
+    background:transparent;
+
+    font-family:'Inter',sans-serif;
+
+    overflow:hidden;
+}
+
+body{
+    padding:10px;
+}
+
+.widget{
+
+    width:100%;
+    height:100%;
+
+    background:#ffffff;
+
+    border:1px solid #ececec;
+
+    border-radius:28px;
+
+    overflow:hidden;
+
+    display:flex;
+    flex-direction:column;
+
+    box-shadow:
+    0 2px 10px rgba(0,0,0,.03);
+}
+
+/* HEADER */
+
+.header{
+
+    height:54px;
+
+    padding:0 18px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    border-bottom:1px solid #f1f1f1;
+}
+
+.title{
+
+    font-size:13px;
+
+    font-weight:700;
+
+    letter-spacing:.08em;
+
+    color:#888;
+
+    text-transform:uppercase;
+}
+
+.progress{
+
+    font-size:12px;
+
+    font-weight:600;
+
+    color:#999;
+}
+
+/* INPUT */
+
+.input-wrap{
+
+    padding:14px;
+
+    display:flex;
+
+    gap:10px;
+
+    border-bottom:1px solid #f4f4f4;
+}
+
+.input{
+
+    flex:1;
+
+    border:none;
+
+    background:#f7f7f7;
+
+    border-radius:14px;
+
+    padding:12px 14px;
+
+    font-size:13px;
+
+    color:#111;
+
+    outline:none;
+}
+
+.input::placeholder{
+
+    color:#aaa;
+}
+
+.add-btn{
+
+    border:none;
+
+    background:#111;
+
+    color:white;
+
+    border-radius:14px;
+
+    padding:0 18px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.15s;
+}
+
+.add-btn:hover{
+
+    opacity:.85;
+}
+
+/* LIST */
+
+.list{
+
+    flex:1;
+
+    overflow-y:auto;
+
+    padding:8px;
+}
+
+.item{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:14px;
+
+    border-radius:18px;
+
+    transition:.15s;
+
+    margin-bottom:6px;
+}
+
+.item:hover{
+
+    background:#fafafa;
+}
+
+.checkbox{
+
+    width:18px;
+    height:18px;
+
+    border-radius:6px;
+
+    border:2px solid #d9d9d9;
+
+    appearance:none;
+
+    cursor:pointer;
+
+    position:relative;
+
+    flex-shrink:0;
+
+    transition:.15s;
+}
+
+.checkbox:checked{
+
+    background:#16c784;
+
+    border-color:#16c784;
+}
+
+.checkbox:checked::after{
+
+    content:'';
+
+    position:absolute;
+
+    left:5px;
+    top:1px;
+
+    width:4px;
+    height:9px;
+
+    border:solid white;
+
+    border-width:0 2px 2px 0;
+
+    transform:rotate(45deg);
+}
+
+.text{
+
+    flex:1;
+
+    font-size:14px;
+
+    color:#222;
+
+    line-height:1.5;
+}
+
+.done .text{
+
+    text-decoration:line-through;
+
+    color:#aaa;
+}
+
+.delete{
+
+    border:none;
+
+    background:none;
+
+    color:#bbb;
+
+    cursor:pointer;
+
+    font-size:18px;
+
+    opacity:0;
+
+    transition:.15s;
+}
+
+.item:hover .delete{
+
+    opacity:1;
+}
+
+.delete:hover{
+
+    color:#ff5f56;
+}
+
+/* EMPTY */
+
+.empty{
+
+    flex:1;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    color:#bbb;
+
+    font-size:12px;
+
+    letter-spacing:.12em;
+
+    font-weight:600;
+}
+
+/* FOOTER */
+
+.footer{
+
+    height:48px;
+
+    border-top:1px solid #f1f1f1;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 16px;
+}
+
+.footer button{
+
+    border:none;
+
+    background:none;
+
+    color:#888;
+
+    font-size:11px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    letter-spacing:.08em;
+
+    transition:.15s;
+}
+
+.footer button:hover{
+
+    color:#111;
+}
+
+/* SCROLLBAR */
+
+::-webkit-scrollbar{
+
+    width:5px;
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#e4e4e4;
+
+    border-radius:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="widget">
+
+<div class="header">
+
+<div class="title">
+Trading Checklist
+</div>
+
+<div class="progress"
+id="progress">
+0 / 0
+</div>
+
+</div>
+
+<div class="input-wrap">
+
+<input
+class="input"
+id="taskInput"
+placeholder="Example: Trend confirmed, SL placed, No revenge trade">
+
+<button
+class="add-btn"
+onclick="addTask()">
+ADD
+</button>
+
+</div>
+
+<div
+class="list"
+id="list">
+</div>
+
+<div
+class="empty"
+id="empty">
+NO ITEMS
+</div>
+
+<div class="footer">
+
+<button onclick="resetAll()">
+RESET
+</button>
+
+<button onclick="clearAll()">
+DELETE ALL
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+const list =
+document.getElementById('list');
+
+const empty =
+document.getElementById('empty');
+
+const progress =
+document.getElementById('progress');
+
+const input =
+document.getElementById('taskInput');
+
+let tasks = [
+
+{
+text:'Check market trend',
+done:false
+},
+
+{
+text:'Risk reward minimum 1:2',
+done:false
+},
+
+{
+text:'Stop loss placed',
+done:false
+},
+
+{
+text:'No emotional trades',
+done:false
+}
+
+];
+
+function render(){
+
+list.innerHTML = '';
+
+if(tasks.length === 0){
+
+empty.style.display = 'flex';
+}
+
+else{
+
+empty.style.display = 'none';
+}
+
+let completed = 0;
+
+tasks.forEach((task,index)=>{
+
+if(task.done)
+completed++;
+
+const item =
+document.createElement('div');
+
+item.className =
+'item' + (task.done ? ' done' : '');
+
+item.innerHTML = `
+
+<input
+type="checkbox"
+class="checkbox"
+${task.done ? 'checked' : ''}
+onchange="toggleTask(${index})">
+
+<div class="text">
+${task.text}
+</div>
+
+<button
+class="delete"
+onclick="deleteTask(${index})">
+×
+</button>
+
+`;
+
+list.appendChild(item);
+
+});
+
+progress.innerText =
+`${completed} / ${tasks.length}`;
+
+}
+
+function addTask(){
+
+const text =
+input.value.trim();
+
+if(!text)
+return;
+
+/* SPLIT BY COMMA */
+
+const splitTasks =
+text.split(',');
+
+splitTasks.forEach(t=>{
+
+const clean =
+t.trim();
+
+if(clean){
+
+tasks.push({
+
+text:clean,
+done:false
+
+});
+
+}
+
+});
+
+input.value = '';
+
+render();
+
+}
+
+function toggleTask(index){
+
+tasks[index].done =
+!tasks[index].done;
+
+render();
+
+}
+
+function deleteTask(index){
+
+tasks.splice(index,1);
+
+render();
+
+}
+
+function resetAll(){
+
+tasks =
+tasks.map(t=>({
+
+...t,
+done:false
+
+}));
+
+render();
+
+}
+
+function clearAll(){
+
+tasks = [];
+
+render();
+
+}
+
+input.addEventListener(
+'keypress',
+e=>{
+
+if(e.key === 'Enter')
+addTask();
+
+});
+
+render();
+
+</script>
+
+</body>
+
+</html>
