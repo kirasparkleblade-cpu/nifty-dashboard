@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
 
     const RSS =
-    "https://news.google.com/rss/search?q=Indian+stock+market+OR+Nifty+OR+Bank+Nifty+OR+Sensex&hl=en-IN&gl=IN&ceid=IN:en";
+    "https://news.google.com/rss/search?q=(Nifty OR Sensex OR BankNifty OR NSE OR Indian stocks OR RBI OR earnings OR markets)&hl=en-IN&gl=IN&ceid=IN:en";
 
     const API =
     `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS)}`;
