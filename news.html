@@ -26,11 +26,11 @@ body {
     width: 100%;
     height: 100%;
 
+    overflow: hidden;
+
     background: #ffffff;
 
     font-family: 'Space Grotesk', sans-serif;
-
-    overflow: hidden;
 }
 
 body {
@@ -49,142 +49,18 @@ body {
 
     border-radius: 28px;
 
-    padding: 22px;
-
-    box-sizing: border-box;
-
-    overflow-y: auto;
+    overflow: hidden;
 
     background: #ffffff;
 }
 
-.header {
+iframe {
 
-    display: flex;
+    width: 100%;
 
-    justify-content: space-between;
+    height: 100%;
 
-    align-items: center;
-
-    margin-bottom: 22px;
-}
-
-.title {
-
-    font-size: 18px;
-
-    font-weight: 700;
-
-    letter-spacing: 1px;
-
-    color: #666;
-}
-
-.live {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    font-size: 14px;
-
-    color: #777;
-}
-
-.dot {
-
-    width: 8px;
-    height: 8px;
-
-    border-radius: 50%;
-
-    background: #22c55e;
-}
-
-.news-list {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 14px;
-}
-
-.news-card {
-
-    text-decoration: none;
-
-    color: inherit;
-
-    border: 1px solid #f0f0f0;
-
-    border-radius: 22px;
-
-    padding: 18px;
-
-    transition: all 0.2s ease;
-
-    background: #fff;
-}
-
-.news-card:hover {
-
-    background: #fafafa;
-
-    transform: translateY(-2px);
-}
-
-.news-title {
-
-    font-size: 18px;
-
-    line-height: 1.5;
-
-    font-weight: 600;
-
-    color: #111;
-}
-
-.news-meta {
-
-    margin-top: 12px;
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-}
-
-.news-time {
-
-    font-size: 13px;
-
-    color: #888;
-}
-
-.tag {
-
-    background: #f4f4f4;
-
-    padding: 6px 12px;
-
-    border-radius: 999px;
-
-    font-size: 12px;
-
-    font-weight: 600;
-
-    color: #666;
-}
-
-.loading {
-
-    color: #777;
-
-    font-size: 15px;
+    border: none;
 }
 
 </style>
@@ -195,235 +71,17 @@ body {
 
 <div class="container">
 
-    <div class="header">
+<iframe
 
-        <div class="title">
+src="https://rss.app/embed/v1/list/6V8L8b8YxQmL8pJt"
 
-            FINANCE NEWS
+loading="lazy"
 
-        </div>
+>
 
-        <div class="live">
-
-            <div class="dot"></div>
-
-            <div>LIVE</div>
-
-        </div>
-
-    </div>
-
-    <div
-        id="newsList"
-        class="news-list"
-    >
-
-        <div class="loading">
-
-            Loading news...
-
-        </div>
-
-    </div>
+</iframe>
 
 </div>
-
-<script>
-
-const RSS_URL =
-'https://api.rss2json.com/v1/api.json?rss_url=';
-
-const GOOGLE_RSS =
-
-'https://news.google.com/rss/search?q=' +
-
-'(NIFTY OR BANKNIFTY OR NSE OR Sensex OR RBI OR inflation OR oil OR Fed OR earnings OR global markets OR economy OR Nasdaq OR Dow Jones OR crude oil OR geopolitics OR US markets)&hl=en-IN&gl=IN&ceid=IN:en';
-
-function formatDate(dateString) {
-
-    const date =
-    new Date(dateString);
-
-    return date.toLocaleString(
-
-        'en-IN',
-
-        {
-
-            day: 'numeric',
-
-            month: 'short',
-
-            year: 'numeric',
-
-            hour: 'numeric',
-
-            minute: '2-digit',
-
-            hour12: true
-        }
-    );
-}
-
-function isRecent(dateString) {
-
-    const now =
-    new Date();
-
-    const articleDate =
-    new Date(dateString);
-
-    const diffDays =
-
-        (now - articleDate) /
-
-        (1000 * 60 * 60 * 24);
-
-    return diffDays <= 3;
-}
-
-async function loadNews() {
-
-    try {
-
-        const response =
-
-        await fetch(
-
-            RSS_URL +
-
-            encodeURIComponent(
-                GOOGLE_RSS
-            ) +
-
-            '&t=' +
-
-            Date.now()
-        );
-
-        const data =
-        await response.json();
-
-        const newsList =
-
-        document.getElementById(
-            'newsList'
-        );
-
-        newsList.innerHTML = '';
-
-        if (
-            !data.items
-        ) {
-
-            newsList.innerHTML = `
-
-                <div class="loading">
-
-                    Unable to load news
-
-                </div>
-
-            `;
-
-            return;
-        }
-
-        let count = 0;
-
-        data.items.forEach(item => {
-
-            if (count >= 12) return;
-
-            if (
-                !isRecent(item.pubDate)
-            ) return;
-
-            const card =
-            document.createElement('a');
-
-            card.href =
-            item.link;
-
-            card.target =
-            '_blank';
-
-            card.className =
-            'news-card';
-
-            card.innerHTML = `
-
-                <div class="news-title">
-
-                    ${item.title}
-
-                </div>
-
-                <div class="news-meta">
-
-                    <div class="news-time">
-
-                        ${formatDate(
-                            item.pubDate
-                        )}
-
-                    </div>
-
-                    <div class="tag">
-
-                        NEWS
-
-                    </div>
-
-                </div>
-
-            `;
-
-            newsList.appendChild(card);
-
-            count++;
-        });
-
-        if (count === 0) {
-
-            newsList.innerHTML = `
-
-                <div class="loading">
-
-                    No recent news available
-
-                </div>
-
-            `;
-        }
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-        document.getElementById(
-            'newsList'
-        ).innerHTML = `
-
-            <div class="loading">
-
-                Unable to load news
-
-            </div>
-
-        `;
-    }
-}
-
-loadNews();
-
-setInterval(
-    loadNews,
-    300000
-);
-
-</script>
 
 </body>
 
