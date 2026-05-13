@@ -26,6 +26,7 @@ rel="stylesheet">
 
     margin: 0;
     padding: 0;
+
     box-sizing: border-box;
 }
 
@@ -35,9 +36,9 @@ body {
     width: 100%;
     height: 100%;
 
-    background: transparent;
-
     overflow: hidden;
+
+    background: transparent;
 
     font-family:
     'Inter',
@@ -62,19 +63,16 @@ body {
 
     overflow-y: auto;
 
-    border-radius: 30px;
+    border-radius: 28px;
 
     background:
-    rgba(255,255,255,0.72);
+    rgba(255,255,255,0.82);
 
     backdrop-filter:
     blur(18px);
 
     border:
     1px solid rgba(0,0,0,0.06);
-
-    box-shadow:
-    0 8px 40px rgba(0,0,0,0.05);
 }
 
 .widget::-webkit-scrollbar {
@@ -84,7 +82,7 @@ body {
 
 .widget::-webkit-scrollbar-thumb {
 
-    background: #d8d8d8;
+    background: #d6d6d6;
 
     border-radius: 999px;
 }
@@ -97,7 +95,7 @@ body {
 
     align-items: center;
 
-    margin-bottom: 22px;
+    margin-bottom: 26px;
 }
 
 .title {
@@ -106,7 +104,7 @@ body {
 
     font-weight: 800;
 
-    color: #6f6f75;
+    color: #6d6d72;
 
     letter-spacing: 1.5px;
 }
@@ -119,11 +117,11 @@ body {
 
     gap: 8px;
 
-    color: #7d7d82;
+    color: #8a8a90;
 
     font-size: 12px;
 
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .dot {
@@ -134,30 +132,6 @@ body {
     border-radius: 50%;
 
     background: #22c55e;
-
-    animation:
-    pulse 1.4s infinite;
-}
-
-@keyframes pulse {
-
-    0% {
-
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    50% {
-
-        transform: scale(1.4);
-        opacity: 0.5;
-    }
-
-    100% {
-
-        transform: scale(1);
-        opacity: 1;
-    }
 }
 
 .section {
@@ -171,13 +145,13 @@ body {
 
     font-weight: 700;
 
-    color: #8b8b90;
+    color: #8a8a90;
 
     letter-spacing: 1px;
 
-    margin-bottom: 14px;
-
     text-transform: uppercase;
+
+    margin-bottom: 14px;
 }
 
 .news-card {
@@ -186,29 +160,26 @@ body {
 
     text-decoration: none;
 
-    padding: 16px;
+    padding: 18px;
 
     margin-bottom: 12px;
 
     border-radius: 20px;
 
     background:
-    rgba(255,255,255,0.75);
+    rgba(255,255,255,0.92);
 
     border:
     1px solid rgba(0,0,0,0.05);
 
     transition:
-    all 0.25s ease;
+    all 0.22s ease;
 }
 
 .news-card:hover {
 
     transform:
     translateY(-2px);
-
-    background:
-    rgba(255,255,255,0.95);
 
     box-shadow:
     0 10px 24px rgba(0,0,0,0.06);
@@ -220,11 +191,11 @@ body {
 
     font-weight: 700;
 
-    line-height: 1.45;
+    line-height: 1.5;
 
     color: #111111;
 
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .news-footer {
@@ -240,7 +211,7 @@ body {
 
     font-size: 12px;
 
-    color: #8f8f95;
+    color: #8c8c92;
 }
 
 .tag {
@@ -251,7 +222,7 @@ body {
 
     background: #f3f3f3;
 
-    color: #666;
+    color: #666666;
 
     font-size: 11px;
 
@@ -262,7 +233,7 @@ body {
 
     font-size: 14px;
 
-    color: #666;
+    color: #777777;
 }
 
 </style>
@@ -333,9 +304,7 @@ encodeURIComponent(
 
 'https://news.google.com/rss/search?q=' +
 
-'NIFTY+OR+BANKNIFTY+OR+NSE+OR+BSE+OR+' +
-
-'"Indian stock market"+OR+Sensex+when:1d&hl=en-IN&gl=IN&ceid=IN:en'
+'NIFTY+BANKNIFTY+Sensex+Indian+stock+market&hl=en-IN&gl=IN&ceid=IN:en'
 
 );
 
@@ -347,16 +316,14 @@ encodeURIComponent(
 
 'https://news.google.com/rss/search?q=' +
 
-'India+stocks+earnings+results+quarterly+profit+' +
-
-'NSE+companies+when:1d&hl=en-IN&gl=IN&ceid=IN:en'
+'India+stocks+earnings+results+NSE+BSE&hl=en-IN&gl=IN&ceid=IN:en'
 
 );
 
 function timeAgo(date) {
 
-    const seconds =
-    Math.floor(
+    const seconds = Math.floor(
+
         (new Date() - new Date(date)) / 1000
     );
 
@@ -368,8 +335,8 @@ function timeAgo(date) {
 
     for (const key in intervals) {
 
-        const interval =
-        Math.floor(
+        const interval = Math.floor(
+
             seconds / intervals[key]
         );
 
@@ -396,6 +363,7 @@ async function loadSection(
 
         const response =
         await fetch(
+
             url +
             '&t=' +
             Date.now()
@@ -411,14 +379,28 @@ async function loadSection(
 
         container.innerHTML = '';
 
+        if (!data.items ||
+            data.items.length === 0) {
+
+            container.innerHTML = `
+
+                <div class="loading">
+
+                    No news available
+
+                </div>
+
+            `;
+
+            return;
+        }
+
         data.items
         .slice(0, 6)
         .forEach(item => {
 
             const card =
-            document.createElement(
-                'a'
-            );
+            document.createElement('a');
 
             card.href =
             item.link;
@@ -460,7 +442,9 @@ async function loadSection(
 
     }
 
-    catch (e) {
+    catch (error) {
+
+        console.error(error);
 
         document.getElementById(
             containerId
