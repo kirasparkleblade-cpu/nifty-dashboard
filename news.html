@@ -8,7 +8,7 @@
 <meta name="viewport"
 content="width=device-width, initial-scale=1.0">
 
-<title>Market News</title>
+<title>Indian Market News</title>
 
 <link rel="preconnect"
 href="https://fonts.googleapis.com">
@@ -267,7 +267,7 @@ a {
 <div class="header">
 
 <div class="title">
-MARKET NEWS
+INDIAN MARKET NEWS
 </div>
 
 <div class="live">
@@ -301,8 +301,50 @@ const RSS_URL =
 'https://api.rss2json.com/v1/api.json?rss_url=' +
 
 encodeURIComponent(
-'https://news.google.com/rss/search?q=indian+stock+market'
+
+'https://news.google.com/rss/search?q=' +
+
+'NIFTY+OR+BANKNIFTY+OR+NSE+OR+SENSEX+OR+' +
+
+'"Indian+stock+market"+when:1d&hl=en-IN&gl=IN&ceid=IN:en'
+
 );
+
+function timeAgo(date) {
+
+    const seconds =
+    Math.floor(
+        (new Date() - new Date(date)) / 1000
+    );
+
+    const intervals = {
+
+        year: 31536000,
+        month: 2592000,
+        day: 86400,
+        hour: 3600,
+        minute: 60
+    };
+
+    for (const key in intervals) {
+
+        const interval =
+        Math.floor(
+            seconds / intervals[key]
+        );
+
+        if (interval >= 1) {
+
+            return interval +
+            ' ' +
+            key +
+            (interval > 1 ? 's' : '') +
+            ' ago';
+        }
+    }
+
+    return 'Just now';
+}
 
 async function loadNews() {
 
@@ -326,7 +368,7 @@ async function loadNews() {
         container.innerHTML = '';
 
         data.items
-        .slice(0, 8)
+        .slice(0, 12)
         .forEach(item => {
 
             const div =
@@ -355,17 +397,7 @@ async function loadNews() {
 
                     <div class="news-time">
 
-                        ${new Date(
-                            item.pubDate
-                        ).toLocaleString(
-                            'en-IN',
-                            {
-                                day: 'numeric',
-                                month: 'short',
-                                hour: 'numeric',
-                                minute: '2-digit'
-                            }
-                        )}
+                        ${timeAgo(item.pubDate)}
 
                     </div>
 
@@ -384,6 +416,8 @@ async function loadNews() {
     }
 
     catch (e) {
+
+        console.error(e);
 
         document.getElementById(
             'newsContainer'
