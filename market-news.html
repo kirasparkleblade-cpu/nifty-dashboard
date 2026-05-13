@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
@@ -169,6 +170,8 @@ body{
 .source{
 
     font-weight:600;
+
+    text-transform:capitalize;
 }
 
 .empty{
@@ -281,13 +284,45 @@ async function loadNews(){
             return;
         }
 
-        let count = 0;
+        const uniqueTitles = new Set();
 
-        data.items.forEach(item => {
+        const filteredNews =
+        data.items
 
-            if(count >= 15) return;
+        .filter(item => {
 
-            if(!isRecent(item.pubDate)) return;
+            if(!item.title) return false;
+
+            if(uniqueTitles.has(item.title))
+                return false;
+
+            uniqueTitles.add(item.title);
+
+            return isRecent(item.pubDate);
+        })
+
+        .sort((a,b) => {
+
+            const dateA =
+            new Date(a.pubDate).getTime();
+
+            const dateB =
+            new Date(b.pubDate).getTime();
+
+            return dateB - dateA;
+        })
+
+        .slice(0,15);
+
+        if(filteredNews.length === 0){
+
+            newsList.innerHTML =
+            '<div class="empty">No recent market news found</div>';
+
+            return;
+        }
+
+        filteredNews.forEach(item => {
 
             const card =
             document.createElement('a');
@@ -298,8 +333,19 @@ async function loadNews(){
 
             card.className = 'news-card';
 
-            const source =
-            item.author || 'Market';
+            let source = "Market";
+
+            try{
+
+                const url =
+                new URL(item.link);
+
+                source =
+                url.hostname
+                .replace("www.","")
+                .split(".")[0];
+
+            } catch {}
 
             card.innerHTML = `
 
@@ -322,15 +368,7 @@ async function loadNews(){
             `;
 
             newsList.appendChild(card);
-
-            count++;
         });
-
-        if(count === 0){
-
-            newsList.innerHTML =
-            '<div class="empty">No recent market news found</div>';
-        }
 
     }
 
