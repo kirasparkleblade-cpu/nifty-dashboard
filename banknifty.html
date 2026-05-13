@@ -1,3 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>BANK NIFTY Widget</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
 <style>
 
 html,
@@ -104,3 +119,96 @@ body {
 }
 
 </style>
+
+</head>
+
+<body>
+
+<div class="widget">
+
+    <div class="label">
+        BANK NIFTY
+    </div>
+
+    <div class="price" id="price">
+        Loading...
+    </div>
+
+    <div class="live">
+
+        <div class="dot"></div>
+
+        <div>
+            Live
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const CSV_URL =
+'https://docs.google.com/spreadsheets/d/e/2PACX-1vSnV2YkleLyZu7oH4sRkaSV1k1KToH05LgWDi4xR0wcKquNeuI8134CcF3n8O1OlbvAIedrQq4XvS4f/pub?output=csv';
+
+async function fetchPrice() {
+
+    try {
+
+        const response = await fetch(CSV_URL);
+
+        const text = await response.text();
+
+        const rows = text.trim().split('\n');
+
+        let value = null;
+
+        rows.forEach(row => {
+
+            const cols = row.split(',');
+
+            if (
+                cols[0]
+                .toUpperCase()
+                .includes('BANKNIFTY')
+            ) {
+
+                value = parseFloat(cols[1]);
+            }
+        });
+
+        if (!value) {
+
+            document.getElementById('price').innerText =
+                'Unavailable';
+
+            return;
+        }
+
+        document.getElementById('price').innerText =
+            value.toLocaleString('en-IN', {
+
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+    }
+
+    catch (e) {
+
+        console.error(e);
+
+        document.getElementById('price').innerText =
+            'Unavailable';
+    }
+}
+
+fetchPrice();
+
+setInterval(fetchPrice, 60000);
+
+</script>
+
+</body>
+
+</html>
