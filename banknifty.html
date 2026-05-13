@@ -151,17 +151,13 @@ body {
 const CSV_URL =
 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSnV2YkleLyZu7oH4sRkaSV1k1KToH05LgWDi4xR0wcKquNeuI8134CcF3n8O1OlbvAIedrQq4XvS4f/pub?output=csv';
 
-let lastPrice = '54,000.00';
-
 async function fetchPrice() {
 
     try {
 
         const response =
         await fetch(
-            CSV_URL +
-            '&t=' +
-            new Date().getTime()
+            CSV_URL + '&t=' + Date.now()
         );
 
         const text =
@@ -170,31 +166,34 @@ async function fetchPrice() {
         const rows =
         text.trim().split('\n');
 
-        let value = null;
+        let bankValue = null;
 
         rows.forEach(row => {
 
             const columns =
             row.split(',');
 
+            const name =
+            columns[0]
+            ?.trim()
+            .toUpperCase();
+
             if (
-                columns[0]
-                .toUpperCase()
-                .includes('BANK')
+                name.includes('BANK')
             ) {
 
-                value =
+                bankValue =
                 parseFloat(columns[1]);
             }
         });
 
         if (
-            value &&
-            !isNaN(value)
+            bankValue &&
+            !isNaN(bankValue)
         ) {
 
-            lastPrice =
-            value.toLocaleString(
+            document.getElementById('price').innerText =
+            bankValue.toLocaleString(
                 'en-IN',
                 {
                     minimumFractionDigits: 2,
@@ -203,8 +202,11 @@ async function fetchPrice() {
             );
         }
 
-        document.getElementById('price').innerText =
-        lastPrice;
+        else {
+
+            document.getElementById('price').innerText =
+            'Unavailable';
+        }
     }
 
     catch (e) {
@@ -212,16 +214,15 @@ async function fetchPrice() {
         console.error(e);
 
         document.getElementById('price').innerText =
-        lastPrice;
+        'Unavailable';
     }
 }
 
 fetchPrice();
 
-setInterval(fetchPrice, 300000);
+setInterval(fetchPrice, 60000);
 
 </script>
-
 </body>
 
 </html>
