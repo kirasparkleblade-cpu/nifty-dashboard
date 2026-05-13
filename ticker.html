@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Market Ticker</title>
+
+<style>
+
+html,
+body {
+
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #191919;
+}
+
+body {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.wrapper {
+
+    width: 100vw;
+
+    background: #191919;
+
+    padding-top: 8px;
+
+    padding-bottom: 8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<!-- TradingView Widget BEGIN -->
+
+<script
+type="module"
+src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js">
+</script>
+
+<tv-ticker-tape
+
+theme="dark"
+
+display-mode="adaptive"
+
+symbols="FOREXCOM:DJI,
+CMCMARKETS:GOLD,
+TVC:SILVER,
+INDEX:BTCUSD,
+NYSE:DOW,
+IG:NASDAQ,
+BLACKBULL:JPN225,
+HSI:HSI,
+SPREADEX:FTSE,
+TVC:USOIL">
+
+</tv-ticker-tape>
+
+<!-- TradingView Widget END -->
+
+</div>
+
+</body>
+
+</html>
