@@ -13,6 +13,8 @@ export default async function handler(req, res) {
 
         let allNews = [];
 
+        const now = new Date();
+
         for (const feed of feeds) {
 
             const response = await fetch(feed);
@@ -42,7 +44,7 @@ export default async function handler(req, res) {
                 let title =
                 titleMatch
                 ? titleMatch[1]
-                : 'No title';
+                : '';
 
                 title = title
                 .replace(/<!\[CDATA\[/g,'')
@@ -63,7 +65,9 @@ export default async function handler(req, res) {
 
                     title,
                     link,
-                    pubDate
+                    pubDate,
+                    timestamp:
+                    new Date(pubDate).getTime()
                 };
             });
 
@@ -72,13 +76,19 @@ export default async function handler(req, res) {
 
         allNews = allNews
 
-        .filter(item =>
-            item.title &&
-            item.title !== 'No title')
+        .filter(item => {
+
+            if(!item.title) return false;
+
+            const diffDays =
+            (now - new Date(item.pubDate))
+            / (1000 * 60 * 60 * 24);
+
+            return diffDays <= 3;
+        })
 
         .sort((a,b)=>
-            new Date(b.pubDate) -
-            new Date(a.pubDate))
+            b.timestamp - a.timestamp)
 
         .slice(0,20);
 
