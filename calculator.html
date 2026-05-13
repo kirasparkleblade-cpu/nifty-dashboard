@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Position Size Calculator</title>
+
+<link rel="preconnect"
+href="https://fonts.googleapis.com">
+
+<link rel="preconnect"
+href="https://fonts.gstatic.com"
+crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+rel="stylesheet">
+
+<style>
+
+* {
+
+    box-sizing: border-box;
+}
+
+html,
+body {
+
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background: #ffffff;
+
+    font-family: 'Space Grotesk', sans-serif;
+
+    overflow: hidden;
+}
+
+body {
+
+    padding: 20px;
+}
+
+.widget {
+
+    width: 100%;
+    height: 100%;
+
+    border: 1px solid #ececec;
+
+    border-radius: 30px;
+
+    padding: 24px;
+
+    background: #ffffff;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+.title {
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    letter-spacing: 1px;
+
+    color: #777;
+
+    text-transform: uppercase;
+}
+
+.grid {
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 14px;
+}
+
+.field {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+label {
+
+    font-size: 12px;
+
+    color: #777;
+
+    font-weight: 500;
+}
+
+input {
+
+    border: 1px solid #e5e5e5;
+
+    border-radius: 14px;
+
+    padding: 14px;
+
+    font-size: 16px;
+
+    outline: none;
+
+    background: #fafafa;
+
+    font-family: inherit;
+}
+
+.results {
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 12px;
+}
+
+.card {
+
+    background: #fafafa;
+
+    border-radius: 18px;
+
+    padding: 16px;
+}
+
+.card-title {
+
+    font-size: 11px;
+
+    color: #888;
+
+    margin-bottom: 8px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+.card-value {
+
+    font-size: 26px;
+
+    font-weight: 700;
+
+    color: #111;
+}
+
+.loss {
+
+    color: #ef4444;
+}
+
+.profit {
+
+    color: #22c55e;
+}
+
+.rr {
+
+    background: #111;
+
+    color: white;
+
+    border-radius: 20px;
+
+    padding: 18px;
+
+    text-align: center;
+}
+
+.rr-label {
+
+    font-size: 12px;
+
+    opacity: 0.7;
+
+    margin-bottom: 10px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+.rr-value {
+
+    font-size: 42px;
+
+    font-weight: 700;
+}
+
+.badge {
+
+    margin-top: 10px;
+
+    display: inline-block;
+
+    padding: 8px 14px;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+}
+
+.good {
+
+    background: rgba(34,197,94,0.15);
+
+    color: #22c55e;
+}
+
+.ok {
+
+    background: rgba(251,191,36,0.15);
+
+    color: #f59e0b;
+}
+
+.bad {
+
+    background: rgba(239,68,68,0.15);
+
+    color: #ef4444;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="widget">
+
+<div class="title">
+Quick Position Sizing
+</div>
+
+<div class="grid">
+
+<div class="field">
+
+<label>Account Size (₹)</label>
+
+<input
+type="number"
+id="balance"
+value="100000">
+
+</div>
+
+<div class="field">
+
+<label>Risk %</label>
+
+<input
+type="number"
+id="risk"
+value="2">
+
+</div>
+
+<div class="field">
+
+<label>Entry Price</label>
+
+<input
+type="number"
+id="entry"
+value="500">
+
+</div>
+
+<div class="field">
+
+<label>Stop Loss</label>
+
+<input
+type="number"
+id="sl"
+value="490">
+
+</div>
+
+<div class="field">
+
+<label>Target</label>
+
+<input
+type="number"
+id="target"
+value="520">
+
+</div>
+
+<div class="field">
+
+<label>Leverage</label>
+
+<input
+type="number"
+id="leverage"
+value="5">
+
+</div>
+
+</div>
+
+<div class="results">
+
+<div class="card">
+
+<div class="card-title">
+Quantity
+</div>
+
+<div
+class="card-value"
+id="qty">
+0
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="card-title">
+Capital Used
+</div>
+
+<div
+class="card-value"
+id="capital">
+₹0
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="card-title">
+Max Loss
+</div>
+
+<div
+class="card-value loss"
+id="loss">
+₹0
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="card-title">
+Max Profit
+</div>
+
+<div
+class="card-value profit"
+id="profit">
+₹0
+</div>
+
+</div>
+
+</div>
+
+<div class="rr">
+
+<div class="rr-label">
+Risk Reward
+</div>
+
+<div
+class="rr-value"
+id="rr">
+1 : 0
+</div>
+
+<div
+class="badge"
+id="badge">
+—
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const inputs =
+document.querySelectorAll('input');
+
+inputs.forEach(input => {
+
+    input.addEventListener(
+        'input',
+        calculate
+    );
+});
+
+function formatINR(num) {
+
+    return '₹' +
+    Math.round(num)
+    .toLocaleString('en-IN');
+}
+
+function calculate() {
+
+    const balance =
+    parseFloat(
+        document.getElementById('balance').value
+    ) || 0;
+
+    const riskPct =
+    parseFloat(
+        document.getElementById('risk').value
+    ) || 0;
+
+    const entry =
+    parseFloat(
+        document.getElementById('entry').value
+    ) || 0;
+
+    const sl =
+    parseFloat(
+        document.getElementById('sl').value
+    ) || 0;
+
+    const target =
+    parseFloat(
+        document.getElementById('target').value
+    ) || 0;
+
+    const leverage =
+    parseFloat(
+        document.getElementById('leverage').value
+    ) || 1;
+
+    const riskAmount =
+    balance * (riskPct / 100);
+
+    const stopDistance =
+    Math.abs(entry - sl);
+
+    const targetDistance =
+    Math.abs(target - entry);
+
+    let qty = 0;
+
+    if (stopDistance > 0) {
+
+        qty =
+        Math.floor(
+            riskAmount / stopDistance
+        );
+    }
+
+    const maxQty =
+    Math.floor(
+        (balance * leverage) / entry
+    );
+
+    qty =
+    Math.min(qty, maxQty);
+
+    const capital =
+    qty * entry;
+
+    const maxLoss =
+    qty * stopDistance;
+
+    const maxProfit =
+    qty * targetDistance;
+
+    const rr =
+    targetDistance / stopDistance;
+
+    document.getElementById('qty')
+    .innerText =
+    qty.toLocaleString('en-IN');
+
+    document.getElementById('capital')
+    .innerText =
+    formatINR(capital);
+
+    document.getElementById('loss')
+    .innerText =
+    formatINR(maxLoss);
+
+    document.getElementById('profit')
+    .innerText =
+    formatINR(maxProfit);
+
+    document.getElementById('rr')
+    .innerText =
+    `1 : ${rr.toFixed(2)}`;
+
+    const badge =
+    document.getElementById('badge');
+
+    if (rr >= 2) {
+
+        badge.innerText =
+        'GOOD SETUP';
+
+        badge.className =
+        'badge good';
+    }
+
+    else if (rr >= 1.5) {
+
+        badge.innerText =
+        'DECENT';
+
+        badge.className =
+        'badge ok';
+    }
+
+    else {
+
+        badge.innerText =
+        'AVOID';
+
+        badge.className =
+        'badge bad';
+    }
+}
+
+calculate();
+
+</script>
+
+</body>
+
+</html>
