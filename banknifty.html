@@ -27,9 +27,9 @@ body {
 
     background: #ffffff;
 
-    font-family: 'Inter', sans-serif;
-
     overflow: hidden;
+
+    font-family: 'Inter', sans-serif;
 }
 
 body {
@@ -133,7 +133,11 @@ async function fetchBankNifty() {
     try {
 
         const response =
-        await fetch(SHEET_URL);
+        await fetch(
+            SHEET_URL +
+            '&t=' +
+            new Date().getTime()
+        );
 
         const text =
         await response.text();
@@ -177,7 +181,15 @@ async function fetchBankNifty() {
             lastPrice;
         }
 
-    } catch (error) {
+        else {
+
+            priceElement.innerText =
+            lastPrice;
+        }
+
+    }
+
+    catch (error) {
 
         console.log(error);
 
@@ -190,7 +202,7 @@ fetchBankNifty();
 
 setInterval(
     fetchBankNifty,
-    60000
+    300000
 );
 
 </script>
