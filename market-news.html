@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Market News</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+html,
+body{
+
+    margin:0;
+    padding:0;
+
+    width:100%;
+    height:100%;
+
+    background:#ffffff;
+
+    font-family:'Space Grotesk',sans-serif;
+
+    overflow:hidden;
+}
+
+body{
+    padding:18px;
+}
+
+.widget{
+
+    width:100%;
+    height:100%;
+
+    border:1px solid #ececec;
+
+    border-radius:28px;
+
+    padding:20px;
+
+    overflow:hidden;
+
+    display:flex;
+    flex-direction:column;
+
+    background:#ffffff;
+}
+
+.top{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:18px;
+}
+
+.title{
+
+    font-size:28px;
+
+    font-weight:700;
+
+    color:#111;
+}
+
+.live{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:#777;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    letter-spacing:1px;
+}
+
+.dot{
+
+    width:8px;
+    height:8px;
+
+    border-radius:50%;
+
+    background:#22c55e;
+}
+
+.news-list{
+
+    flex:1;
+
+    overflow-y:auto;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+    padding-right:6px;
+}
+
+.news-card{
+
+    text-decoration:none;
+
+    border:1px solid #efefef;
+
+    border-radius:18px;
+
+    padding:16px;
+
+    transition:0.2s ease;
+
+    color:#111;
+
+    background:#fff;
+}
+
+.news-card:hover{
+
+    border-color:#d8d8d8;
+
+    transform:translateY(-2px);
+}
+
+.news-title{
+
+    font-size:15px;
+
+    font-weight:700;
+
+    line-height:1.5;
+
+    margin-bottom:8px;
+}
+
+.news-meta{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    color:#888;
+
+    font-size:12px;
+}
+
+.source{
+
+    font-weight:600;
+}
+
+.news-list::-webkit-scrollbar{
+    width:5px;
+}
+
+.news-list::-webkit-scrollbar-thumb{
+    background:#ddd;
+    border-radius:10px;
+}
+
+.empty{
+
+    color:#ff4444;
+
+    font-size:14px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="widget">
+
+    <div class="top">
+
+        <div class="title">
+            Market News
+        </div>
+
+        <div class="live">
+
+            <div class="dot"></div>
+
+            <div>LIVE</div>
+
+        </div>
+
+    </div>
+
+    <div class="news-list" id="newsList">
+
+        <div class="empty">
+            Loading news...
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const RSS =
+`https://news.google.com/rss/search?q=
+(
+NSE OR NIFTY OR BANKNIFTY OR SENSEX OR RBI OR earnings OR inflation OR crude oil OR Fed
+)
+(site:moneycontrol.com OR site:economictimes.indiatimes.com OR site:livemint.com)
+&hl=en-IN&gl=IN&ceid=IN:en`;
+
+const API =
+`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS)}`;
+
+function isRecent(dateString){
+
+    const now = new Date();
+
+    const newsDate = new Date(dateString);
+
+    const diff =
+    (now - newsDate) /
+    (1000 * 60 * 60 * 24);
+
+    return diff <= 3;
+}
+
+function formatDate(dateString){
+
+    const d = new Date(dateString);
+
+    return d.toLocaleString('en-IN',{
+        day:'2-digit',
+        month:'short',
+        hour:'2-digit',
+        minute:'2-digit'
+    });
+}
+
+async function loadNews(){
+
+    try{
+
+        const response =
+        await fetch(API);
+
+        const data =
+        await response.json();
+
+        const newsList =
+        document.getElementById('newsList');
+
+        newsList.innerHTML = '';
+
+        if(!data.items){
+
+            newsList.innerHTML =
+            '<div class="empty">No news available</div>';
+
+            return;
+        }
+
+        let count = 0;
+
+        data.items.forEach(item => {
+
+            if(count >= 15) return;
+
+            if(!isRecent(item.pubDate)) return;
+
+            const card =
+            document.createElement('a');
+
+            card.href = item.link;
+
+            card.target = '_blank';
+
+            card.className = 'news-card';
+
+            const source =
+            item.author || 'Market';
+
+            card.innerHTML = `
+
+                <div class="news-title">
+                    ${item.title}
+                </div>
+
+                <div class="news-meta">
+
+                    <div class="source">
+                        ${source}
+                    </div>
+
+                    <div>
+                        ${formatDate(item.pubDate)}
+                    </div>
+
+                </div>
+
+            `;
+
+            newsList.appendChild(card);
+
+            count++;
+        });
+
+        if(count === 0){
+
+            newsList.innerHTML =
+            '<div class="empty">No recent market news found</div>';
+        }
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        document.getElementById('newsList').innerHTML =
+        '<div class="empty">Unable to load news</div>';
+    }
+}
+
+loadNews();
+
+setInterval(loadNews,300000);
+
+</script>
+
+</body>
+</html>
