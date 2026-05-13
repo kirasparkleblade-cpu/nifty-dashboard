@@ -205,6 +205,10 @@ body {
     justify-content: space-between;
 
     align-items: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
 }
 
 .news-time {
@@ -320,37 +324,25 @@ encodeURIComponent(
 
 );
 
-function timeAgo(date) {
+function formatDateTime(dateString) {
 
-    const seconds = Math.floor(
+    const date = new Date(dateString);
 
-        (new Date() - new Date(date)) / 1000
-    );
+    return date.toLocaleString('en-IN', {
 
-    const intervals = {
+        day: 'numeric',
 
-        hour: 3600,
-        minute: 60
-    };
+        month: 'short',
 
-    for (const key in intervals) {
+        year: 'numeric',
 
-        const interval = Math.floor(
+        hour: 'numeric',
 
-            seconds / intervals[key]
-        );
+        minute: '2-digit',
 
-        if (interval >= 1) {
+        hour12: true
 
-            return interval +
-            ' ' +
-            key +
-            (interval > 1 ? 's' : '') +
-            ' ago';
-        }
-    }
-
-    return 'Just now';
+    });
 }
 
 async function loadSection(
@@ -425,7 +417,7 @@ async function loadSection(
 
                     <div class="news-time">
 
-                        ${timeAgo(item.pubDate)}
+                        ${formatDateTime(item.pubDate)}
 
                     </div>
 
