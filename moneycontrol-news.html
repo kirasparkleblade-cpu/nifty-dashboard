@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Moneycontrol News</title>
+
+<link
+href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+rel="stylesheet">
+
+<style>
+
+html,
+body{
+
+    margin:0;
+    padding:0;
+
+    width:100%;
+    height:100%;
+
+    overflow:hidden;
+
+    background:#ffffff;
+
+    font-family:'Space Grotesk',sans-serif;
+}
+
+.container{
+
+    width:100%;
+    height:100%;
+
+    box-sizing:border-box;
+
+    padding:18px;
+
+    overflow-y:auto;
+}
+
+.header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:18px;
+}
+
+.title{
+
+    font-size:13px;
+
+    font-weight:700;
+
+    letter-spacing:1px;
+
+    color:#777;
+
+    text-transform:uppercase;
+}
+
+.live{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    font-size:12px;
+
+    color:#888;
+}
+
+.dot{
+
+    width:8px;
+    height:8px;
+
+    background:#22c55e;
+
+    border-radius:50%;
+}
+
+.news{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+}
+
+.card{
+
+    display:block;
+
+    text-decoration:none;
+
+    border:1px solid #ececec;
+
+    border-radius:20px;
+
+    padding:14px;
+
+    transition:0.2s;
+
+    color:#111;
+}
+
+.card:hover{
+
+    background:#fafafa;
+
+    transform:translateY(-1px);
+}
+
+.headline{
+
+    font-size:15px;
+
+    font-weight:600;
+
+    line-height:1.45;
+
+    margin-bottom:8px;
+}
+
+.meta{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+}
+
+.date{
+
+    font-size:12px;
+
+    color:#888;
+}
+
+.tag{
+
+    padding:5px 10px;
+
+    border-radius:999px;
+
+    background:#f4f4f5;
+
+    font-size:11px;
+
+    font-weight:600;
+
+    color:#777;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<div class="title">
+Moneycontrol Market News
+</div>
+
+<div class="live">
+
+<div class="dot"></div>
+
+<div>
+Live
+</div>
+
+</div>
+
+</div>
+
+<div
+class="news"
+id="news">
+
+Loading...
+
+</div>
+
+</div>
+
+<script>
+
+const RSS =
+'https://www.moneycontrol.com/rss/stocksmarketsindia.xml';
+
+async function loadNews(){
+
+    try{
+
+        const response =
+        await fetch(
+
+        'https://api.rss2json.com/v1/api.json?rss_url='
+        + encodeURIComponent(RSS)
+
+        );
+
+        const data =
+        await response.json();
+
+        const news =
+        document.getElementById('news');
+
+        news.innerHTML='';
+
+        data.items
+        .slice(0,12)
+        .forEach(item=>{
+
+            const card =
+            document.createElement('a');
+
+            card.className='card';
+
+            card.href=item.link;
+
+            card.target='_blank';
+
+            const date =
+            new Date(item.pubDate);
+
+            card.innerHTML=`
+
+            <div class="headline">
+            ${item.title}
+            </div>
+
+            <div class="meta">
+
+                <div class="date">
+                ${date.toLocaleString('en-IN',{
+                    day:'numeric',
+                    month:'short',
+                    hour:'numeric',
+                    minute:'2-digit'
+                })}
+                </div>
+
+                <div class="tag">
+                MARKET
+                </div>
+
+            </div>
+
+            `;
+
+            news.appendChild(card);
+
+        });
+
+    }
+
+    catch(e){
+
+        document.getElementById('news')
+        .innerHTML='Unable to load news';
+
+        console.error(e);
+    }
+}
+
+loadNews();
+
+setInterval(loadNews,300000);
+
+</script>
+
+</body>
+
+</html>
