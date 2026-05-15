@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
 <title>Notepad</title>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-
 *{
     margin:0;
     padding:0;
@@ -19,382 +16,230 @@
 }
 
 body{
-
-    background:#f5f5f5;
-
-    font-family:Inter,sans-serif;
-
-    padding:18px;
+    font-family: Inter, sans-serif;
+    background: transparent;
+    padding:8px;
+    color:#37352f;
 }
 
-/* PANEL */
+/* MAIN CARD */
 
-.clean-note-panel{
-
-    background:#ffffff;
-
-    border:1px solid #e5e7eb;
-
-    border-radius:18px;
-
-    overflow:hidden;
-
-    box-shadow:
-    0 1px 2px rgba(0,0,0,0.03),
-    0 8px 30px rgba(0,0,0,0.04);
-
-    display:flex;
-
-    flex-direction:column;
-
+.notepad{
+    width:100%;
     height:520px;
+    background:#ffffff;
+    border:1px solid #ececec;
+    border-radius:18px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
 }
 
 /* HEADER */
 
-.clean-note-header{
-
-    height:56px;
-
+.header{
     display:flex;
-
-    align-items:center;
-
     justify-content:space-between;
-
-    padding:0 18px;
-
-    border-bottom:1px solid #eef2f7;
-
-    background:#fcfcfd;
+    align-items:center;
+    padding:14px 18px;
+    border-bottom:1px solid #f3f3f3;
+    background:#ffffff;
 }
 
-.clean-note-title{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
-
-    font-size:12px;
-
+.title{
+    font-size:14px;
     font-weight:700;
-
-    letter-spacing:0.14em;
-
-    color:#111827;
+    letter-spacing:2px;
+    color:#2f3437;
 }
 
-.clean-note-title i{
-
-    color:#2563eb;
-
-    font-size:16px;
-}
-
-.clean-note-right{
-
+.header-buttons{
     display:flex;
-
-    align-items:center;
-
     gap:10px;
 }
 
-.clean-top-btn{
-
-    height:34px;
-
-    padding:0 14px;
-
-    border:1px solid #e5e7eb;
-
-    background:white;
-
-    border-radius:10px;
-
-    display:flex;
-
-    align-items:center;
-
-    gap:6px;
-
-    font-size:11px;
-
-    font-weight:600;
-
-    color:#4b5563;
-
+.btn{
+    border:1px solid #ececec;
+    background:#ffffff;
+    border-radius:12px;
+    padding:8px 14px;
+    font-size:12px;
     cursor:pointer;
-
-    transition:0.18s ease;
+    color:#555;
+    transition:0.2s;
+    font-weight:500;
 }
 
-.clean-top-btn:hover{
-
-    background:#f9fafb;
-
-    border-color:#d1d5db;
-
-    color:#111827;
+.btn:hover{
+    background:#f7f7f7;
 }
 
 /* TOOLBAR */
 
-.clean-toolbar{
-
-    height:44px;
-
+.toolbar{
     display:flex;
-
     align-items:center;
-
-    gap:5px;
-
-    padding:0 14px;
-
-    border-bottom:1px solid #f1f5f9;
-
-    background:#ffffff;
+    gap:6px;
+    padding:10px 16px;
+    border-bottom:1px solid #f5f5f5;
+    background:#fcfcfc;
 }
 
-.clean-toolbar button{
-
-    width:32px;
-
-    height:32px;
-
+.tool{
     border:none;
-
     background:transparent;
-
-    border-radius:8px;
-
     color:#6b7280;
-
+    padding:6px 8px;
+    border-radius:8px;
     cursor:pointer;
-
-    transition:0.15s ease;
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    font-size:15px;
+    font-size:14px;
+    transition:0.2s;
 }
 
-.clean-toolbar button:hover{
-
-    background:#f3f4f6;
-
-    color:#111827;
+.tool:hover{
+    background:#f1f3f5;
+    color:#2f3437;
 }
 
-.clean-divider{
-
+.divider{
     width:1px;
-
-    height:16px;
-
-    background:#e5e7eb;
-
+    height:18px;
+    background:#ececec;
     margin:0 4px;
 }
 
 /* EDITOR */
 
-.clean-editor{
-
+.editor{
     flex:1;
-
-    padding:24px;
-
-    overflow-y:auto;
-
+    padding:18px;
     outline:none;
-
-    background:white;
-
-    color:#111827;
-
-    font-size:14px;
-
-    line-height:1.9;
-
-    font-family:'IBM Plex Sans',sans-serif;
+    overflow:auto;
+    font-size:15px;
+    line-height:1.7;
+    color:#37352f;
 }
 
-.clean-editor:empty:before{
-
-    content:attr(data-placeholder);
-
+.editor:empty:before{
+    content:"Write your notes here...";
     color:#9ca3af;
-}
-
-.clean-editor ul,
-.clean-editor ol{
-
-    padding-left:22px;
 }
 
 /* FOOTER */
 
-.clean-footer{
-
-    height:38px;
-
+.footer{
     display:flex;
-
+    justify-content:flex-end;
     align-items:center;
-
-    justify-content:space-between;
-
-    padding:0 18px;
-
-    border-top:1px solid #f1f5f9;
-
-    background:#fcfcfd;
-
-    font-size:10px;
-
+    padding:10px 16px;
+    border-top:1px solid #f5f5f5;
+    font-size:11px;
+    letter-spacing:1px;
     color:#9ca3af;
-
-    letter-spacing:0.08em;
+    background:#ffffff;
 }
 
-.clean-save{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:6px;
-}
-
-.clean-dot{
-
-    width:6px;
-
-    height:6px;
-
+.dot{
+    width:7px;
+    height:7px;
     border-radius:50%;
-
     background:#22c55e;
+    margin-left:6px;
 }
-
 </style>
-
 </head>
 
 <body>
 
-<div class="clean-note-panel">
+<div class="notepad">
 
-    <div class="clean-note-header">
+    <!-- HEADER -->
+    <div class="header">
+        <div class="title">NOTEPAD</div>
 
-        <div class="clean-note-title">
-
-            <i class="ti ti-notebook"></i>
-
-            NOTEPAD
-
+        <div class="header-buttons">
+            <button class="btn" onclick="clearNotes()">CLEAR</button>
+            <button class="btn" onclick="copyNotes()">COPY</button>
         </div>
+    </div>
 
-        <div class="clean-note-right">
+    <!-- TOOLBAR -->
+    <div class="toolbar">
 
-            <button class="clean-top-btn" onclick="clearAll()">
+        <button class="tool" onclick="format('bold')"><b>B</b></button>
 
-                <i class="ti ti-trash"></i>
+        <button class="tool" onclick="format('italic')"><i>I</i></button>
 
-                CLEAR
+        <button class="tool" onclick="format('underline')"><u>U</u></button>
 
-            </button>
+        <div class="divider"></div>
 
-            <button class="clean-top-btn" onclick="copyAll()">
+        <button class="tool" onclick="format('insertUnorderedList')">• List</button>
 
-                <i class="ti ti-copy"></i>
-
-                COPY
-
-            </button>
-
-        </div>
+        <button class="tool" onclick="format('insertOrderedList')">1. List</button>
 
     </div>
 
-    <div class="clean-toolbar">
-
-        <button onclick="fmt('bold')">
-            <i class="ti ti-bold"></i>
-        </button>
-
-        <button onclick="fmt('italic')">
-            <i class="ti ti-italic"></i>
-        </button>
-
-        <button onclick="fmt('underline')">
-            <i class="ti ti-underline"></i>
-        </button>
-
-        <div class="clean-divider"></div>
-
-        <button onclick="fmt('insertUnorderedList')">
-            <i class="ti ti-list"></i>
-        </button>
-
-        <button onclick="fmt('insertOrderedList')">
-            <i class="ti ti-list-numbers"></i>
-        </button>
-
-    </div>
-
+    <!-- EDITOR -->
     <div
-        class="clean-editor"
         id="editor"
+        class="editor"
         contenteditable="true"
-        spellcheck="false"
-        data-placeholder="Write your trading notes here..."
     ></div>
 
-    <div class="clean-footer">
-
-        <span>—</span>
-
-        <div class="clean-save">
-
-            AUTO-SAVE
-
-            <div class="clean-dot"></div>
-
-        </div>
-
+    <!-- FOOTER -->
+    <div class="footer">
+        AUTO-SAVE
+        <div class="dot"></div>
     </div>
 
 </div>
 
 <script>
+const editor = document.getElementById('editor');
 
-function fmt(command){
+/* LOAD SAVED NOTES */
 
-    document.execCommand(command,false,null);
+window.onload = () => {
+    const saved = localStorage.getItem('notepad-content');
+
+    if(saved){
+        editor.innerHTML = saved;
+    }
+};
+
+/* AUTO SAVE */
+
+editor.addEventListener('input', () => {
+    localStorage.setItem(
+        'notepad-content',
+        editor.innerHTML
+    );
+});
+
+/* FORMATTING */
+
+function format(command){
+    document.execCommand(command, false, null);
 }
 
-function clearAll(){
+/* CLEAR */
 
-    document.getElementById('editor').innerHTML='';
+function clearNotes(){
+
+    editor.innerHTML = '';
+
+    localStorage.removeItem('notepad-content');
 }
 
-function copyAll(){
+/* COPY */
 
-    const text =
-    document.getElementById('editor').innerText;
+function copyNotes(){
 
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(editor.innerText);
+
+    alert('Copied');
 }
-
 </script>
 
 </body>
