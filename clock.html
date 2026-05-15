@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Clock Calendar Widget</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Inter,sans-serif;
+    background:transparent;
+    padding:8px;
+}
+
+/* MAIN CARD */
+
+.widget{
+    width:100%;
+    background:#ffffff;
+    border:1px solid #ececec;
+    border-radius:22px;
+    overflow:hidden;
+}
+
+/* HEADER */
+
+.header{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    padding:18px 20px;
+    border-bottom:1px solid #f2f2f2;
+}
+
+/* SWITCH */
+
+.switch{
+    display:flex;
+    gap:8px;
+}
+
+.switch button{
+    border:none;
+    background:#f5f5f5;
+    color:#666;
+    padding:7px 12px;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.switch button.active{
+    background:#111;
+    color:#fff;
+}
+
+/* CLOCK */
+
+.clock-section{
+    padding:26px 24px 10px;
+    text-align:center;
+}
+
+.time{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:64px;
+    font-weight:700;
+    color:#111;
+    letter-spacing:-3px;
+    line-height:1;
+}
+
+.date{
+    margin-top:12px;
+    color:#888;
+    font-size:16px;
+}
+
+/* CALENDAR */
+
+.calendar{
+    margin:20px;
+    border:1px solid #f1f1f1;
+    border-radius:18px;
+    overflow:hidden;
+    background:#fff;
+}
+
+/* CALENDAR TOP */
+
+.cal-top{
+    padding:18px;
+    border-bottom:1px solid #f4f4f4;
+    text-align:center;
+    font-weight:700;
+    font-size:16px;
+    color:#222;
+    background:#fafafa;
+}
+
+/* DAYS */
+
+.days{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    padding:12px 10px 0;
+}
+
+.day-name{
+    text-align:center;
+    font-size:12px;
+    color:#999;
+    font-weight:600;
+    padding-bottom:12px;
+}
+
+/* DATES */
+
+.dates{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:6px;
+    padding:0 12px 18px;
+}
+
+.date-box{
+    aspect-ratio:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:12px;
+    font-size:14px;
+    color:#555;
+    transition:0.2s;
+}
+
+.today{
+    background:#111;
+    color:#fff;
+    font-weight:700;
+}
+
+.other{
+    color:#d0d0d0;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="widget">
+
+    <!-- HEADER -->
+    <div class="header">
+
+        <div class="switch">
+
+            <button id="btn12" class="active">
+                12H
+            </button>
+
+            <button id="btn24">
+                24H
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- CLOCK -->
+    <div class="clock-section">
+
+        <div class="time" id="clock">
+            00:00:00
+        </div>
+
+        <div class="date" id="dateText">
+            Monday, January 1, 2026
+        </div>
+
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="calendar">
+
+        <div class="cal-top" id="monthYear">
+            May 2026
+        </div>
+
+        <div class="days">
+
+            <div class="day-name">Sun</div>
+            <div class="day-name">Mon</div>
+            <div class="day-name">Tue</div>
+            <div class="day-name">Wed</div>
+            <div class="day-name">Thu</div>
+            <div class="day-name">Fri</div>
+            <div class="day-name">Sat</div>
+
+        </div>
+
+        <div class="dates" id="dates"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+let is24Hour = false;
+
+/* BUTTONS */
+
+const btn12 = document.getElementById('btn12');
+const btn24 = document.getElementById('btn24');
+
+btn12.onclick = () => {
+
+    is24Hour = false;
+
+    btn12.classList.add('active');
+    btn24.classList.remove('active');
+
+    updateClock();
+};
+
+btn24.onclick = () => {
+
+    is24Hour = true;
+
+    btn24.classList.add('active');
+    btn12.classList.remove('active');
+
+    updateClock();
+};
+
+/* CLOCK */
+
+function updateClock(){
+
+    const now = new Date();
+
+    let hours = now.getHours();
+
+    const minutes =
+        String(now.getMinutes()).padStart(2,'0');
+
+    const seconds =
+        String(now.getSeconds()).padStart(2,'0');
+
+    let ampm = '';
+
+    if(!is24Hour){
+
+        ampm = hours >= 12 ? ' PM' : ' AM';
+
+        hours = hours % 12;
+
+        hours = hours ? hours : 12;
+    }
+
+    hours =
+        String(hours).padStart(2,'0');
+
+    document.getElementById('clock').innerHTML =
+        `${hours}:${minutes}:${seconds}${ampm}`;
+
+    document.getElementById('dateText').innerHTML =
+        now.toLocaleDateString(
+            'en-US',
+            {
+                weekday:'long',
+                year:'numeric',
+                month:'long',
+                day:'numeric'
+            }
+        );
+}
+
+/* CALENDAR */
+
+function generateCalendar(){
+
+    const dates =
+        document.getElementById('dates');
+
+    dates.innerHTML = '';
+
+    const now = new Date();
+
+    const year =
+        now.getFullYear();
+
+    const month =
+        now.getMonth();
+
+    const today =
+        now.getDate();
+
+    document.getElementById('monthYear').innerHTML =
+        now.toLocaleString(
+            'default',
+            {
+                month:'long',
+                year:'numeric'
+            }
+        );
+
+    const firstDay =
+        new Date(year, month, 1).getDay();
+
+    const daysInMonth =
+        new Date(year, month + 1, 0).getDate();
+
+    /* EMPTY BOXES */
+
+    for(let i = 0; i < firstDay; i++){
+
+        const empty =
+            document.createElement('div');
+
+        empty.className =
+            'date-box other';
+
+        dates.appendChild(empty);
+    }
+
+    /* DATES */
+
+    for(let d = 1; d <= daysInMonth; d++){
+
+        const div =
+            document.createElement('div');
+
+        div.className =
+            'date-box';
+
+        if(d === today){
+
+            div.classList.add('today');
+        }
+
+        div.innerHTML = d;
+
+        dates.appendChild(div);
+    }
+}
+
+/* RUN */
+
+updateClock();
+
+generateCalendar();
+
+setInterval(updateClock,1000);
+
+</script>
+
+</body>
+</html>
