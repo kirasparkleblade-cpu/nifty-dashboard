@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Notepad</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    background:#f5f5f5;
+
+    font-family:Inter,sans-serif;
+
+    padding:18px;
+}
+
+/* PANEL */
+
+.clean-note-panel{
+
+    background:#ffffff;
+
+    border:1px solid #e5e7eb;
+
+    border-radius:18px;
+
+    overflow:hidden;
+
+    box-shadow:
+    0 1px 2px rgba(0,0,0,0.03),
+    0 8px 30px rgba(0,0,0,0.04);
+
+    display:flex;
+
+    flex-direction:column;
+
+    height:520px;
+}
+
+/* HEADER */
+
+.clean-note-header{
+
+    height:56px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 18px;
+
+    border-bottom:1px solid #eef2f7;
+
+    background:#fcfcfd;
+}
+
+.clean-note-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    font-size:12px;
+
+    font-weight:700;
+
+    letter-spacing:0.14em;
+
+    color:#111827;
+}
+
+.clean-note-title i{
+
+    color:#2563eb;
+
+    font-size:16px;
+}
+
+.clean-note-right{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+}
+
+.clean-top-btn{
+
+    height:34px;
+
+    padding:0 14px;
+
+    border:1px solid #e5e7eb;
+
+    background:white;
+
+    border-radius:10px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    font-size:11px;
+
+    font-weight:600;
+
+    color:#4b5563;
+
+    cursor:pointer;
+
+    transition:0.18s ease;
+}
+
+.clean-top-btn:hover{
+
+    background:#f9fafb;
+
+    border-color:#d1d5db;
+
+    color:#111827;
+}
+
+/* TOOLBAR */
+
+.clean-toolbar{
+
+    height:44px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    padding:0 14px;
+
+    border-bottom:1px solid #f1f5f9;
+
+    background:#ffffff;
+}
+
+.clean-toolbar button{
+
+    width:32px;
+
+    height:32px;
+
+    border:none;
+
+    background:transparent;
+
+    border-radius:8px;
+
+    color:#6b7280;
+
+    cursor:pointer;
+
+    transition:0.15s ease;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:15px;
+}
+
+.clean-toolbar button:hover{
+
+    background:#f3f4f6;
+
+    color:#111827;
+}
+
+.clean-divider{
+
+    width:1px;
+
+    height:16px;
+
+    background:#e5e7eb;
+
+    margin:0 4px;
+}
+
+/* EDITOR */
+
+.clean-editor{
+
+    flex:1;
+
+    padding:24px;
+
+    overflow-y:auto;
+
+    outline:none;
+
+    background:white;
+
+    color:#111827;
+
+    font-size:14px;
+
+    line-height:1.9;
+
+    font-family:'IBM Plex Sans',sans-serif;
+}
+
+.clean-editor:empty:before{
+
+    content:attr(data-placeholder);
+
+    color:#9ca3af;
+}
+
+.clean-editor ul,
+.clean-editor ol{
+
+    padding-left:22px;
+}
+
+/* FOOTER */
+
+.clean-footer{
+
+    height:38px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 18px;
+
+    border-top:1px solid #f1f5f9;
+
+    background:#fcfcfd;
+
+    font-size:10px;
+
+    color:#9ca3af;
+
+    letter-spacing:0.08em;
+}
+
+.clean-save{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+}
+
+.clean-dot{
+
+    width:6px;
+
+    height:6px;
+
+    border-radius:50%;
+
+    background:#22c55e;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="clean-note-panel">
+
+    <div class="clean-note-header">
+
+        <div class="clean-note-title">
+
+            <i class="ti ti-notebook"></i>
+
+            NOTEPAD
+
+        </div>
+
+        <div class="clean-note-right">
+
+            <button class="clean-top-btn" onclick="clearAll()">
+
+                <i class="ti ti-trash"></i>
+
+                CLEAR
+
+            </button>
+
+            <button class="clean-top-btn" onclick="copyAll()">
+
+                <i class="ti ti-copy"></i>
+
+                COPY
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="clean-toolbar">
+
+        <button onclick="fmt('bold')">
+            <i class="ti ti-bold"></i>
+        </button>
+
+        <button onclick="fmt('italic')">
+            <i class="ti ti-italic"></i>
+        </button>
+
+        <button onclick="fmt('underline')">
+            <i class="ti ti-underline"></i>
+        </button>
+
+        <div class="clean-divider"></div>
+
+        <button onclick="fmt('insertUnorderedList')">
+            <i class="ti ti-list"></i>
+        </button>
+
+        <button onclick="fmt('insertOrderedList')">
+            <i class="ti ti-list-numbers"></i>
+        </button>
+
+    </div>
+
+    <div
+        class="clean-editor"
+        id="editor"
+        contenteditable="true"
+        spellcheck="false"
+        data-placeholder="Write your trading notes here..."
+    ></div>
+
+    <div class="clean-footer">
+
+        <span>—</span>
+
+        <div class="clean-save">
+
+            AUTO-SAVE
+
+            <div class="clean-dot"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function fmt(command){
+
+    document.execCommand(command,false,null);
+}
+
+function clearAll(){
+
+    document.getElementById('editor').innerHTML='';
+}
+
+function copyAll(){
+
+    const text =
+    document.getElementById('editor').innerText;
+
+    navigator.clipboard.writeText(text);
+}
+
+</script>
+
+</body>
+</html>
