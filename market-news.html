@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8" />
@@ -61,9 +62,9 @@ body{
 
     display:flex;
 
-    justify-content:space-between;
-
     align-items:center;
+
+    gap:12px;
 
     margin-bottom:18px;
 }
@@ -75,6 +76,41 @@ body{
     font-weight:700;
 
     color:#111;
+}
+
+.refresh-btn {
+
+    width: 28px;
+    height: 28px;
+
+    border-radius: 50%;
+
+    border: 1px solid #e5e5e5;
+
+    background: #ffffff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+
+    font-size: 12px;
+
+    color: #555;
+
+    padding: 0;
+}
+
+.refresh-btn:hover {
+
+    background: #f5f5f5;
+
+    transform: rotate(90deg);
 }
 
 .live{
@@ -92,6 +128,8 @@ body{
     color:#777;
 
     letter-spacing:1px;
+
+    margin-left:auto;
 }
 
 .dot{
@@ -202,6 +240,14 @@ body{
             Market News
         </div>
 
+        <button
+            class="refresh-btn"
+            id="refreshBtn">
+
+            ↻
+
+        </button>
+
         <div class="live">
 
             <div class="dot"></div>
@@ -266,7 +312,9 @@ async function loadNews(){
     try{
 
         const response =
-        await fetch(API);
+        await fetch(
+            API + '?t=' + Date.now()
+        );
 
         const data =
         await response.json();
@@ -384,6 +432,24 @@ async function loadNews(){
 loadNews();
 
 setInterval(loadNews,300000);
+
+document
+.getElementById('refreshBtn')
+.addEventListener('click', async () => {
+
+    const btn =
+    document.getElementById('refreshBtn');
+
+    btn.style.opacity = '0.5';
+
+    await loadNews();
+
+    setTimeout(() => {
+
+        btn.style.opacity = '1';
+
+    }, 300);
+});
 
 </script>
 
