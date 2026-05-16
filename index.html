@@ -47,7 +47,7 @@ body {
 
     background: #ffffff;
 
-    border: 1px solid #e8e8e8;
+    border: 1px solid #e5e5e5;
 
     border-radius: 32px;
 
@@ -62,8 +62,15 @@ body {
     justify-content: center;
 
     gap: 22px;
+}
 
-    position: relative;
+.top {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
 }
 
 .label {
@@ -77,6 +84,39 @@ body {
     letter-spacing: 1px;
 
     text-transform: uppercase;
+}
+
+.refresh-btn {
+
+    width: 42px;
+    height: 42px;
+
+    border-radius: 50%;
+
+    border: 1px solid #e5e5e5;
+
+    background: #ffffff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+
+    font-size: 18px;
+
+    color: #555;
+}
+
+.refresh-btn:hover {
+
+    background: #f5f5f5;
+
+    transform: rotate(90deg);
 }
 
 .price {
@@ -120,59 +160,6 @@ body {
     border-radius: 50%;
 }
 
-.actions {
-
-    display: flex;
-
-    gap: 12px;
-
-    margin-top: 10px;
-}
-
-button {
-
-    padding: 12px 20px;
-
-    border-radius: 16px;
-
-    border: 1px solid #e5e5e5;
-
-    background: #ffffff;
-
-    color: #111111;
-
-    font-family: 'Space Grotesk', sans-serif;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-    cursor: pointer;
-
-    transition: all 0.2s ease;
-}
-
-button:hover {
-
-    background: #f5f5f5;
-
-    transform: translateY(-1px);
-}
-
-.updated {
-
-    position: absolute;
-
-    bottom: 28px;
-    right: 32px;
-
-    color: #9a9aa1;
-
-    font-size: 13px;
-
-    font-weight: 500;
-}
-
 </style>
 
 </head>
@@ -181,12 +168,28 @@ button:hover {
 
 <div class="widget">
 
-    <div class="label">
-        NIFTY 50
+    <div class="top">
+
+        <div class="label">
+            NIFTY 50
+        </div>
+
+        <button
+            class="refresh-btn"
+            id="refreshBtn">
+
+            ↻
+
+        </button>
+
     </div>
 
-    <div class="price" id="price">
+    <div
+        class="price"
+        id="price">
+
         Loading...
+
     </div>
 
     <div class="live">
@@ -197,18 +200,6 @@ button:hover {
             Live
         </div>
 
-    </div>
-
-    <div class="actions">
-
-        <button id="refreshBtn">
-            Refresh Data
-        </button>
-
-    </div>
-
-    <div class="updated" id="updated">
-        Updating...
     </div>
 
 </div>
@@ -222,60 +213,52 @@ async function fetchPrice() {
 
     try {
 
-        const response = await fetch(
-            CSV_URL + '&t=' + Date.now()
+        const response =
+        await fetch(
+
+            CSV_URL +
+            '&t=' +
+            Date.now()
+
         );
 
-        const text = await response.text();
+        const text =
+        await response.text();
 
         const rows =
-            text.trim().split('\n');
+        text.trim().split('\n');
 
         const columns =
-            rows[0].split(',');
+        rows[0].split(',');
 
         const value =
-            parseFloat(columns[1]);
+        parseFloat(columns[1]);
 
-        if (isNaN(value)) {
+        if (isNaN(value)) return;
 
-            document.getElementById('price')
-            .innerText = 'Unavailable';
-
-            return;
-        }
-
-        document.getElementById('price')
+        document
+        .getElementById('price')
         .innerText =
-            value.toLocaleString('en-IN', {
 
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+            value.toLocaleString(
+                'en-IN',
+                {
 
-        const now = new Date();
-
-        document.getElementById('updated')
-        .innerText =
-            'Updated • ' +
-            now.toLocaleTimeString('en-IN', {
-
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }
+            );
     }
 
     catch (e) {
 
         console.error(e);
 
-        document.getElementById('price')
-        .innerText = 'Unavailable';
+        document
+        .getElementById('price')
+        .innerText =
 
-        document.getElementById('updated')
-        .innerText = 'Failed to update';
+        'Unavailable';
     }
 }
 
@@ -283,29 +266,25 @@ fetchPrice();
 
 setInterval(fetchPrice, 60000);
 
-const refreshBtn =
-document.getElementById('refreshBtn');
+document
+.getElementById('refreshBtn')
+.addEventListener('click', async () => {
 
-refreshBtn.addEventListener('click', async () => {
+    const btn =
+    document.getElementById('refreshBtn');
 
-    refreshBtn.innerText = 'Refreshing...';
-
-    refreshBtn.disabled = true;
+    btn.style.opacity = '0.5';
 
     await fetchPrice();
 
     setTimeout(() => {
 
-        refreshBtn.innerText =
-            'Refresh Data';
+        btn.style.opacity = '1';
 
-        refreshBtn.disabled = false;
-
-    }, 500);
+    }, 300);
 });
 
 </script>
 
 </body>
-
 </html>
