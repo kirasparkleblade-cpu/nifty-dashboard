@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>NIFTY 50</title>
+<title>NIFTY 50 Widget</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,129 +17,92 @@
 
 html,
 body{
-
     margin:0;
     padding:0;
-
     width:100%;
     height:100%;
-
     overflow:hidden;
-
     background:#ffffff;
-
     font-family:'Space Grotesk',sans-serif;
 }
 
 body{
-
     display:flex;
-
     justify-content:center;
-
     align-items:center;
 }
 
 .widget{
-
     width:92vw;
     height:82vh;
-
     background:#ffffff;
-
     border:1px solid #e5e5e5;
-
     border-radius:32px;
-
     padding:42px;
-
     box-sizing:border-box;
-
     display:flex;
-
     flex-direction:column;
-
     justify-content:center;
-
-    gap:18px;
+    gap:22px;
 }
 
 .header{
-
     display:flex;
-
     align-items:center;
-
     gap:10px;
 }
 
 .label{
-
     color:#6b6b6f;
-
     font-size:clamp(18px,1.5vw,28px);
-
     font-weight:500;
-
     letter-spacing:1px;
-
     text-transform:uppercase;
 }
 
-.refresh{
-
-    width:26px;
-    height:26px;
-
+.refresh-btn{
+    width:28px;
+    height:28px;
     border-radius:50%;
-
     border:1px solid #e5e5e5;
-
     background:#fff;
-
     cursor:pointer;
-
-    font-size:14px;
-
     color:#666;
-
+    font-size:14px;
     display:flex;
-
     align-items:center;
-
     justify-content:center;
-
     transition:all .2s ease;
 }
 
-.refresh:hover{
-
-    background:#f5f5f5;
-
+.refresh-btn:hover{
+    background:#f6f6f6;
     transform:rotate(90deg);
 }
 
 .price{
-
+    color:#111111;
     font-size:clamp(56px,8vw,120px);
-
     font-weight:700;
-
     line-height:1;
-
     letter-spacing:-2px;
-
-    font-variant-numeric:
-    tabular-nums lining-nums;
-
-    color:#111;
+    font-variant-numeric:tabular-nums lining-nums;
 }
 
-.change{
+.live{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:#7d7d82;
+    font-size:clamp(14px,1vw,18px);
+    font-weight:500;
+}
 
-    font-size:clamp(18px,1.4vw,26px);
-
-    font-weight:600;
+.dot{
+    width:8px;
+    height:8px;
+    background:#22c55e;
+    border-radius:50%;
 }
 
 </style>
@@ -152,34 +116,28 @@ body{
     <div class="header">
 
         <div class="label">
-
             NIFTY 50
-
         </div>
 
         <button
-        class="refresh"
-        onclick="fetchPrice()">
-
+            class="refresh-btn"
+            onclick="fetchPrice()">
             ↻
-
         </button>
 
     </div>
 
     <div
-    class="price"
-    id="price">
-
+        class="price"
+        id="price">
         Loading...
-
     </div>
 
-    <div
-    class="change"
-    id="change">
+    <div class="live">
 
-        --
+        <div class="dot"></div>
+
+        <div>Live</div>
 
     </div>
 
@@ -190,15 +148,15 @@ body{
 const CSV_URL =
 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSnV2YkleLyZu7oH4sRkaSV1k1KToH05LgWDi4xR0wcKquNeuI8134CcF3n8O1OlbvAIedrQq4XvS4f/pub?output=csv';
 
+let previousPrice = null;
+
 async function fetchPrice(){
 
     try{
 
         const response =
         await fetch(
-            CSV_URL +
-            '&t=' +
-            Date.now()
+            CSV_URL + '&t=' + Date.now()
         );
 
         const text =
@@ -210,63 +168,40 @@ async function fetchPrice(){
         const columns =
         rows[0].split(',');
 
-        const current =
+        const currentPrice =
         parseFloat(columns[1]);
 
-        const previous =
-        parseFloat(columns[2]);
+        if(isNaN(currentPrice)) return;
 
-        if(
-            isNaN(current)
-        ){
-            return;
+        const priceEl =
+        document.getElementById('price');
+
+        if(previousPrice !== null){
+
+            if(currentPrice > previousPrice){
+
+                priceEl.style.color =
+                '#16a34a';
+
+            }
+            else if(currentPrice < previousPrice){
+
+                priceEl.style.color =
+                '#dc2626';
+
+            }
+            else{
+
+                priceEl.style.color =
+                '#111111';
+            }
         }
 
-        const price =
-        document.getElementById(
-            'price'
-        );
+        previousPrice =
+        currentPrice;
 
-        const change =
-        document.getElementById(
-            'change'
-        );
-
-        const points =
-        current - previous;
-
-        const percent =
-        (points / previous) * 100;
-
-        if(points > 0){
-
-            price.style.color =
-            '#16a34a';
-
-            change.style.color =
-            '#16a34a';
-        }
-
-        else if(points < 0){
-
-            price.style.color =
-            '#dc2626';
-
-            change.style.color =
-            '#dc2626';
-        }
-
-        else{
-
-            price.style.color =
-            '#6b7280';
-
-            change.style.color =
-            '#6b7280';
-        }
-
-        price.innerText =
-        current.toLocaleString(
+        priceEl.innerText =
+        currentPrice.toLocaleString(
             'en-IN',
             {
                 minimumFractionDigits:2,
@@ -274,20 +209,14 @@ async function fetchPrice(){
             }
         );
 
-        change.innerText =
-        `${points > 0 ? '+' : ''}${points.toFixed(2)}
-        (${percent.toFixed(2)}%)`;
-
     }
 
-    catch(e){
+    catch(error){
 
-        console.error(e);
+        console.error(error);
 
         document
-        .getElementById(
-            'price'
-        )
+        .getElementById('price')
         .innerText =
         'Unavailable';
     }
