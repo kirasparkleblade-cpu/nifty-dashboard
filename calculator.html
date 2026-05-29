@@ -92,12 +92,6 @@ body{
     display:flex;
 
     flex-direction:column;
-
-    gap:4px;
-
-    width:100%;
-
-    min-width:0;
 }
 
 label{
@@ -284,6 +278,13 @@ Quick Position Sizing
 
 <div class="grid">
 
+    <div class="field" style="grid-column:span 2;">
+<label>
+<input type="checkbox" id="percentMode">
+Use Percentage Mode
+</label>
+</div>
+
 <div class="field">
 
 <label>Account Size</label>
@@ -319,7 +320,7 @@ value="500">
 
 <div class="field">
 
-<label>Stop Loss</label>
+<label id="slLabel">Stop Loss</label>
 
 <input
 type="number"
@@ -330,8 +331,7 @@ value="490">
 
 <div class="field">
 
-<label>Target</label>
-
+<label id="targetLabel">Target</label>
 <input
 type="number"
 id="target"
@@ -446,7 +446,85 @@ inputs.forEach(input => {
         calculate
     );
 });
+const percentMode =
+document.getElementById('percentMode');
 
+percentMode.addEventListener('change', () => {
+
+    const entry =
+    parseFloat(
+        document.getElementById('entry').value
+    ) || 0;
+
+    const slInput =
+    document.getElementById('sl');
+
+    const targetInput =
+    document.getElementById('target');
+
+    const slLabel =
+    document.getElementById('slLabel');
+
+    const targetLabel =
+    document.getElementById('targetLabel');
+
+    if (percentMode.checked) {
+
+        const slPrice =
+        parseFloat(slInput.value) || 0;
+
+        const targetPrice =
+        parseFloat(targetInput.value) || 0;
+
+        const slPct =
+        Math.abs(entry - slPrice)
+        / entry * 100;
+
+        const tpPct =
+        Math.abs(targetPrice - entry)
+        / entry * 100;
+
+        slInput.value =
+        slPct.toFixed(2);
+
+        targetInput.value =
+        tpPct.toFixed(2);
+
+        slLabel.innerText =
+        'SL %';
+
+        targetLabel.innerText =
+        'TP %';
+    }
+    else {
+
+        const slPct =
+        parseFloat(slInput.value) || 0;
+
+        const tpPct =
+        parseFloat(targetInput.value) || 0;
+
+        slInput.value =
+        (
+            entry *
+            (1 - slPct / 100)
+        ).toFixed(2);
+
+        targetInput.value =
+        (
+            entry *
+            (1 + tpPct / 100)
+        ).toFixed(2);
+
+        slLabel.innerText =
+        'Stop Loss';
+
+        targetLabel.innerText =
+        'Target';
+    }
+
+    calculate();
+});
 function formatINR(num) {
 
     return '₹' +
@@ -471,15 +549,44 @@ function calculate() {
         document.getElementById('entry').value
     ) || 0;
 
-    const sl =
+  let sl;
+let target;
+
+if (
+    document.getElementById('percentMode')
+    .checked
+) {
+
+    const slPct =
     parseFloat(
         document.getElementById('sl').value
     ) || 0;
 
-    const target =
+    const tpPct =
     parseFloat(
         document.getElementById('target').value
     ) || 0;
+
+    sl =
+    entry *
+    (1 - slPct / 100);
+
+    target =
+    entry *
+    (1 + tpPct / 100);
+}
+else {
+
+    sl =
+    parseFloat(
+        document.getElementById('sl').value
+    ) || 0;
+
+    target =
+    parseFloat(
+        document.getElementById('target').value
+    ) || 0;
+}
 
     const leverage =
     parseFloat(
