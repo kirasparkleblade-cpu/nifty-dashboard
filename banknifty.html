@@ -3,11 +3,9 @@
 const CSV_URL =
 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSnV2YkleLyZu7oH4sRkaSV1k1KToH05LgWDi4xR0wcKquNeuI8134CcF3n8O1OlbvAIedrQq4XvS4f/pub?output=csv';
 
-let refreshing = false;
+async function fetchPrice(){
 
-async function fetchPrice() {
-
-    try {
+    try{
 
         const response =
         await fetch(
@@ -23,115 +21,85 @@ async function fetchPrice() {
         let currentPrice = null;
         let previousClose = null;
 
-        rows.forEach(row => {
+        for(let i = 1; i < rows.length; i++){
 
             const columns =
-            row.split(',');
+            rows[i]
+            .replace(/"/g,'')
+            .split(',');
 
             const symbol =
             columns[0]
-            ?.trim()
+            .trim()
             .toUpperCase();
 
-            if (
-                symbol.includes('BANK')
-            ) {
+            if(symbol.includes('BANK')){
 
                 currentPrice =
                 parseFloat(columns[1]);
 
                 previousClose =
                 parseFloat(columns[2]);
+
+                break;
             }
-        });
-
-        if (
-            currentPrice === null ||
-            isNaN(currentPrice)
-        ) {
-
-            document.getElementById('price').innerText =
-            'Unavailable';
-
-            return;
         }
 
-        const priceElement =
+        if(
+            currentPrice === null ||
+            isNaN(currentPrice)
+        ){
+            throw new Error();
+        }
+
+        const priceEl =
         document.getElementById('price');
 
-        priceElement.innerText =
+        priceEl.innerText =
         currentPrice.toLocaleString(
             'en-IN',
             {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+                minimumFractionDigits:2,
+                maximumFractionDigits:2
             }
         );
 
-        if (
+        if(
             previousClose !== null &&
             !isNaN(previousClose)
-        ) {
+        ){
 
-            if (
-                currentPrice > previousClose
-            ) {
+            if(currentPrice > previousClose){
 
-                priceElement.style.color =
+                priceEl.style.color =
                 '#16a34a';
+
             }
+            else if(currentPrice < previousClose){
 
-            else if (
-                currentPrice < previousClose
-            ) {
-
-                priceElement.style.color =
+                priceEl.style.color =
                 '#dc2626';
+
             }
+            else{
 
-            else {
-
-                priceElement.style.color =
+                priceEl.style.color =
                 '#111111';
+
             }
         }
+
     }
 
-    catch (e) {
+    catch(error){
 
-        console.error(e);
+        console.error(error);
 
-        document.getElementById('price').innerText =
+        document
+        .getElementById('price')
+        .innerText =
         'Unavailable';
     }
-}
-
-async function manualRefresh(){
-
-    if(refreshing) return;
-
-    refreshing = true;
-
-    const button =
-    document.querySelector('.refresh-btn');
-
-    if(button){
-
-        button.style.opacity = '0.5';
-    }
-
-    await fetchPrice();
-
-    setTimeout(() => {
-
-        refreshing = false;
-
-        if(button){
-
-            button.style.opacity = '1';
-        }
-
-    },3000);
 }
 
 fetchPrice();
