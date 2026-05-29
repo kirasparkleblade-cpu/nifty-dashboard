@@ -1,558 +1,232 @@
 
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
-<title>Quick Position Sizing</title>
-
-<link rel="preconnect"
-href="https://fonts.googleapis.com">
-
-<link rel="preconnect"
-href="https://fonts.gstatic.com"
-crossorigin>
-
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
-rel="stylesheet">
 
 <style>
-
-* {
-    box-sizing: border-box;
-}
-
-html,
-body {
-
-    margin: 0;
-    padding: 0;
-
-    width: 100%;
-    height: auto;
-
-    background: #ffffff;
-
-    font-family: 'Space Grotesk', sans-serif;
-
-    overflow: hidden;
-}
-
-body {
-
-    padding: 10px;
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: auto; background: transparent; font-family: 'Space Grotesk', sans-serif; overflow: hidden; }
+body { padding: 10px; }
 .widget {
-
-    width: 100%;
-
-    border: 1px solid #ececec;
-
-    border-radius: 24px;
-
-    padding: 16px;
-
-    background: #ffffff;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 12px;
+  width: 100%; max-width: 340px; margin: 0 auto;
+  border: 1px solid #ececec; border-radius: 24px; padding: 16px;
+  background: #ffffff; display: flex; flex-direction: column; gap: 12px;
 }
-
-.title {
-
-    font-size: 11px;
-
-    font-weight: 700;
-
-    letter-spacing: 1px;
-
-    color: #777;
-
-    text-transform: uppercase;
+.title { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #777; text-transform: uppercase; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+label { font-size: 10px; color: #888; font-weight: 500; }
+input[type=number] {
+  border: 1px solid #ececec; border-radius: 12px; padding: 10px;
+  font-size: 13px; outline: none; background: #fafafa;
+  font-family: inherit; color: #111; width: 100%;
 }
+.results { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.card { background: #fafafa; border-radius: 14px; padding: 10px; }
+.card-title { font-size: 9px; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+.card-value { font-size: 18px; font-weight: 700; color: #111; }
+.loss { color: #ef4444; }
+.profit { color: #22c55e; }
+.rr { background: #111; color: white; border-radius: 18px; padding: 14px; text-align: center; }
+.rr-label { font-size: 9px; opacity: 0.7; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+.rr-value { font-size: 28px; font-weight: 700; }
+.badge { margin-top: 8px; display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 10px; font-weight: 600; }
+.good { background: rgba(34,197,94,0.15); color: #22c55e; }
+.ok { background: rgba(251,191,36,0.15); color: #f59e0b; }
+.bad { background: rgba(239,68,68,0.15); color: #ef4444; }
 
-.grid {
-
-    display: grid;
-
-    grid-template-columns: 1fr 1fr;
-
-    gap: 8px;
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fafafa; border-radius: 14px; padding: 8px 12px;
 }
-
-.field {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 4px;
+.mode-badges { display: flex; align-items: center; gap: 5px; }
+.mode-pill {
+  font-size: 10px; font-weight: 600; padding: 3px 8px;
+  border-radius: 999px; transition: all 0.2s;
+  border: 1px solid #ececec; color: #aaa; background: transparent;
 }
-
-label {
-
-    font-size: 10px;
-
-    color: #888;
-
-    font-weight: 500;
+.mode-pill.active { background: #111; color: #fff; border-color: transparent; }
+.switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: #ddd; border-radius: 999px; transition: .3s;
 }
-
-input {
-
-    border: 1px solid #ececec;
-
-    border-radius: 12px;
-
-    padding: 10px;
-
-    font-size: 13px;
-
-    outline: none;
-
-    background: #fafafa;
-
-    font-family: inherit;
+.slider:before {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; left: 3px; bottom: 3px;
+  background: white; border-radius: 50%; transition: .3s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
-
-.results {
-
-    display: grid;
-
-    grid-template-columns: 1fr 1fr;
-
-    gap: 8px;
-}
-
-.card {
-
-    background: #fafafa;
-
-    border-radius: 14px;
-
-    padding: 10px;
-}
-
-.card-title {
-
-    font-size: 9px;
-
-    color: #888;
-
-    margin-bottom: 4px;
-
-    text-transform: uppercase;
-
-    letter-spacing: 1px;
-}
-
-.card-value {
-
-    font-size: 18px;
-
-    font-weight: 700;
-
-    color: #111;
-}
-
-.loss {
-
-    color: #ef4444;
-}
-
-.profit {
-
-    color: #22c55e;
-}
-
-.rr {
-
-    background: #111;
-
-    color: white;
-
-    border-radius: 18px;
-
-    padding: 14px;
-
-    text-align: center;
-}
-
-.rr-label {
-
-    font-size: 9px;
-
-    opacity: 0.7;
-
-    margin-bottom: 6px;
-
-    text-transform: uppercase;
-
-    letter-spacing: 1px;
-}
-
-.rr-value {
-
-    font-size: 28px;
-
-    font-weight: 700;
-}
-
-.badge {
-
-    margin-top: 8px;
-
-    display: inline-block;
-
-    padding: 6px 10px;
-
-    border-radius: 999px;
-
-    font-size: 10px;
-
-    font-weight: 600;
-}
-
-.good {
-
-    background: rgba(34,197,94,0.15);
-
-    color: #22c55e;
-}
-
-.ok {
-
-    background: rgba(251,191,36,0.15);
-
-    color: #f59e0b;
-}
-
-.bad {
-
-    background: rgba(239,68,68,0.15);
-
-    color: #ef4444;
-}
-
+.switch input:checked + .slider { background: #111; }
+.switch input:checked + .slider:before { transform: translateX(16px); }
 </style>
 
-</head>
-
-<body>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 
 <div class="widget">
+  <div class="title">Quick Position Sizing</div>
 
-<div class="title">
-Quick Position Sizing
-</div>
+  <div class="toggle-row">
+    <div class="mode-badges">
+      <span class="mode-pill active" id="pill-price">₹ Price</span>
+      <span class="mode-pill" id="pill-pct">% Percent</span>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="modeToggle">
+      <span class="slider"></span>
+    </label>
+  </div>
 
-<div class="grid">
+  <div class="grid">
+    <div class="field">
+      <label>Account Size</label>
+      <input type="number" id="balance" value="100000">
+    </div>
+    <div class="field">
+      <label>Risk %</label>
+      <input type="number" id="risk" value="2">
+    </div>
+    <div class="field">
+      <label>Entry</label>
+      <input type="number" id="entry" value="500">
+    </div>
+    <div class="field">
+      <label>Leverage</label>
+      <input type="number" id="leverage" value="5">
+    </div>
+    <div class="field">
+      <label id="slLabel">Stop Loss (₹)</label>
+      <input type="number" id="sl" value="490">
+    </div>
+    <div class="field">
+      <label id="targetLabel">Target (₹)</label>
+      <input type="number" id="target" value="520">
+    </div>
+  </div>
 
-<div class="field">
+  <div class="results" id="priceDisplay" style="display:none;">
+    <div class="card">
+      <div class="card-title">SL Price</div>
+      <div class="card-value loss" id="slPrice">₹0</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Target Price</div>
+      <div class="card-value profit" id="targetPrice">₹0</div>
+    </div>
+  </div>
 
-<label>Account Size</label>
+  <div class="results">
+    <div class="card">
+      <div class="card-title">Quantity</div>
+      <div class="card-value" id="qty">0</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Capital</div>
+      <div class="card-value" id="capital">₹0</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Max Loss</div>
+      <div class="card-value loss" id="loss">₹0</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Max Profit</div>
+      <div class="card-value profit" id="profit">₹0</div>
+    </div>
+  </div>
 
-<input
-type="number"
-id="balance"
-value="100000">
-
-</div>
-
-<div class="field">
-
-<label>Risk %</label>
-
-<input
-type="number"
-id="risk"
-value="2">
-
-</div>
-
-<div class="field">
-
-<label>Entry</label>
-
-<input
-type="number"
-id="entry"
-value="500">
-
-</div>
-
-<div class="field">
-
-<label>Stop Loss</label>
-
-<input
-type="number"
-id="sl"
-value="490">
-
-</div>
-
-<div class="field">
-
-<label>Target</label>
-
-<input
-type="number"
-id="target"
-value="520">
-
-</div>
-
-<div class="field">
-
-<label>Leverage</label>
-
-<input
-type="number"
-id="leverage"
-value="5">
-
-</div>
-
-</div>
-
-<div class="results">
-
-<div class="card">
-
-<div class="card-title">
-Quantity
-</div>
-
-<div
-class="card-value"
-id="qty">
-0
-</div>
-
-</div>
-
-<div class="card">
-
-<div class="card-title">
-Capital
-</div>
-
-<div
-class="card-value"
-id="capital">
-₹0
-</div>
-
-</div>
-
-<div class="card">
-
-<div class="card-title">
-Max Loss
-</div>
-
-<div
-class="card-value loss"
-id="loss">
-₹0
-</div>
-
-</div>
-
-<div class="card">
-
-<div class="card-title">
-Max Profit
-</div>
-
-<div
-class="card-value profit"
-id="profit">
-₹0
-</div>
-
-</div>
-
-</div>
-
-<div class="rr">
-
-<div class="rr-label">
-Risk Reward
-</div>
-
-<div
-class="rr-value"
-id="rr">
-1 : 0
-</div>
-
-<div
-class="badge"
-id="badge">
-—
-</div>
-
-</div>
-
+  <div class="rr">
+    <div class="rr-label">Risk Reward</div>
+    <div class="rr-value" id="rr">1 : 0</div>
+    <div class="badge" id="badge">—</div>
+  </div>
 </div>
 
 <script>
+const toggle = document.getElementById('modeToggle');
+const pillPrice = document.getElementById('pill-price');
+const pillPct = document.getElementById('pill-pct');
+const slLabel = document.getElementById('slLabel');
+const targetLabel = document.getElementById('targetLabel');
+const priceDisplay = document.getElementById('priceDisplay');
 
-const inputs =
-document.querySelectorAll('input');
+function isPctMode() { return toggle.checked; }
 
-inputs.forEach(input => {
-
-    input.addEventListener(
-        'input',
-        calculate
-    );
+toggle.addEventListener('change', () => {
+  const pct = isPctMode();
+  pillPrice.classList.toggle('active', !pct);
+  pillPct.classList.toggle('active', pct);
+  if (pct) {
+    const entry = parseFloat(document.getElementById('entry').value) || 0;
+    const slVal = parseFloat(document.getElementById('sl').value) || 0;
+    const tgtVal = parseFloat(document.getElementById('target').value) || 0;
+    if (entry > 0) {
+      document.getElementById('sl').value = (Math.abs(entry - slVal) / entry * 100).toFixed(2);
+      document.getElementById('target').value = (Math.abs(tgtVal - entry) / entry * 100).toFixed(2);
+    }
+    slLabel.textContent = 'Stop Loss (%)';
+    targetLabel.textContent = 'Target (%)';
+    priceDisplay.style.display = 'grid';
+  } else {
+    const entry = parseFloat(document.getElementById('entry').value) || 0;
+    const slPct = parseFloat(document.getElementById('sl').value) || 0;
+    const tgtPct = parseFloat(document.getElementById('target').value) || 0;
+    document.getElementById('sl').value = (entry * (1 - slPct / 100)).toFixed(2);
+    document.getElementById('target').value = (entry * (1 + tgtPct / 100)).toFixed(2);
+    slLabel.textContent = 'Stop Loss (₹)';
+    targetLabel.textContent = 'Target (₹)';
+    priceDisplay.style.display = 'none';
+  }
+  calculate();
 });
 
-function formatINR(num) {
+document.querySelectorAll('input').forEach(i => i.addEventListener('input', calculate));
 
-    return '₹' +
-    Math.round(num)
-    .toLocaleString('en-IN');
+function formatINR(num) {
+  return '₹' + Math.round(num).toLocaleString('en-IN');
 }
 
 function calculate() {
+  const balance = parseFloat(document.getElementById('balance').value) || 0;
+  const riskPct = parseFloat(document.getElementById('risk').value) || 0;
+  const entry = parseFloat(document.getElementById('entry').value) || 0;
+  const leverage = parseFloat(document.getElementById('leverage').value) || 1;
+  const rawSl = parseFloat(document.getElementById('sl').value) || 0;
+  const rawTarget = parseFloat(document.getElementById('target').value) || 0;
 
-    const balance =
-    parseFloat(
-        document.getElementById('balance').value
-    ) || 0;
+  let slPrice, targetPrice;
+  if (isPctMode()) {
+    slPrice = entry * (1 - rawSl / 100);
+    targetPrice = entry * (1 + rawTarget / 100);
+    document.getElementById('slPrice').textContent = formatINR(slPrice);
+    document.getElementById('targetPrice').textContent = formatINR(targetPrice);
+  } else {
+    slPrice = rawSl;
+    targetPrice = rawTarget;
+  }
 
-    const riskPct =
-    parseFloat(
-        document.getElementById('risk').value
-    ) || 0;
+  const riskAmount = balance * (riskPct / 100);
+  const stopDistance = Math.abs(entry - slPrice);
+  const targetDistance = Math.abs(targetPrice - entry);
 
-    const entry =
-    parseFloat(
-        document.getElementById('entry').value
-    ) || 0;
+  let qty = 0;
+  if (stopDistance > 0) qty = Math.floor(riskAmount / stopDistance);
+  const maxQty = entry > 0 ? Math.floor((balance * leverage) / entry) : 0;
+  qty = Math.min(qty, maxQty);
 
-    const sl =
-    parseFloat(
-        document.getElementById('sl').value
-    ) || 0;
+  const capital = qty * entry;
+  const maxLoss = qty * stopDistance;
+  const maxProfit = qty * targetDistance;
+  const rr = stopDistance > 0 ? targetDistance / stopDistance : 0;
 
-    const target =
-    parseFloat(
-        document.getElementById('target').value
-    ) || 0;
+  document.getElementById('qty').textContent = qty.toLocaleString('en-IN');
+  document.getElementById('capital').textContent = formatINR(capital);
+  document.getElementById('loss').textContent = formatINR(maxLoss);
+  document.getElementById('profit').textContent = formatINR(maxProfit);
+  document.getElementById('rr').textContent = `1 : ${rr.toFixed(2)}`;
 
-    const leverage =
-    parseFloat(
-        document.getElementById('leverage').value
-    ) || 1;
-
-    const riskAmount =
-    balance * (riskPct / 100);
-
-    const stopDistance =
-    Math.abs(entry - sl);
-
-    const targetDistance =
-    Math.abs(target - entry);
-
-    let qty = 0;
-
-    if (stopDistance > 0) {
-
-        qty =
-        Math.floor(
-            riskAmount / stopDistance
-        );
-    }
-
-    const maxQty =
-    Math.floor(
-        (balance * leverage) / entry
-    );
-
-    qty =
-    Math.min(qty, maxQty);
-
-    const capital =
-    qty * entry;
-
-    const maxLoss =
-    qty * stopDistance;
-
-    const maxProfit =
-    qty * targetDistance;
-
-    const rr =
-    targetDistance / stopDistance;
-
-    document.getElementById('qty')
-    .innerText =
-    qty.toLocaleString('en-IN');
-
-    document.getElementById('capital')
-    .innerText =
-    formatINR(capital);
-
-    document.getElementById('loss')
-    .innerText =
-    formatINR(maxLoss);
-
-    document.getElementById('profit')
-    .innerText =
-    formatINR(maxProfit);
-
-    document.getElementById('rr')
-    .innerText =
-    `1 : ${rr.toFixed(2)}`;
-
-    const badge =
-    document.getElementById('badge');
-
-    if (rr >= 2) {
-
-        badge.innerText =
-        'GOOD';
-
-        badge.className =
-        'badge good';
-    }
-
-    else if (rr >= 1.5) {
-
-        badge.innerText =
-        'OK';
-
-        badge.className =
-        'badge ok';
-    }
-
-    else {
-
-        badge.innerText =
-        'BAD';
-
-        badge.className =
-        'badge bad';
-    }
+  const badge = document.getElementById('badge');
+  if (rr >= 2) { badge.textContent = 'GOOD'; badge.className = 'badge good'; }
+  else if (rr >= 1.5) { badge.textContent = 'OK'; badge.className = 'badge ok'; }
+  else { badge.textContent = 'BAD'; badge.className = 'badge bad'; }
 }
 
 calculate();
-
 </script>
-
-</body>
-
-</html>
