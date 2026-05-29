@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -22,246 +23,224 @@ rel="stylesheet">
 
 <style>
 
-*{
-    box-sizing:border-box;
+* {
+    box-sizing: border-box;
 }
 
 html,
-body{
-    margin:0;
-    padding:0;
-    width:100%;
-    height:auto;
-    overflow-x:hidden;
-    background:#ffffff;
-    font-family:'Space Grotesk',sans-serif;
+body {
+
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    height: auto;
+
+    background: #ffffff;
+
+    font-family: 'Space Grotesk', sans-serif;
+
+    overflow: hidden;
 }
 
-body{
-    padding:10px;
+body {
+
+    padding: 10px;
 }
 
-.widget{
+.widget {
 
-    width:100%;
-    max-width:350px;
+    width: 100%;
 
-    margin:0 auto;
+    border: 1px solid #ececec;
 
-    border:1px solid #ececec;
-    border-radius:24px;
+    border-radius: 24px;
 
-    padding:14px;
+    padding: 16px;
 
-    background:#ffffff;
+    background: #ffffff;
 
-    display:flex;
-    flex-direction:column;
+    display: flex;
 
-    gap:12px;
+    flex-direction: column;
 
-    overflow:hidden;
+    gap: 12px;
 }
 
-.title{
+.title {
 
-    font-size:11px;
+    font-size: 11px;
 
-    font-weight:700;
+    font-weight: 700;
 
-    letter-spacing:1px;
+    letter-spacing: 1px;
 
-    color:#777;
+    color: #777;
 
-    text-transform:uppercase;
+    text-transform: uppercase;
 }
 
-.grid{
+.grid {
 
-    display:grid;
+    display: grid;
 
-    grid-template-columns:1fr 1fr;
+    grid-template-columns: 1fr 1fr;
 
-    gap:8px;
-
-    width:100%;
+    gap: 8px;
 }
 
-.field{
+.field {
 
-    display:flex;
+    display: flex;
 
-    flex-direction:column;
+    flex-direction: column;
+
+    gap: 4px;
 }
 
-label{
+label {
 
-    font-size:10px;
+    font-size: 10px;
 
-    color:#888;
+    color: #888;
 
-    font-weight:500;
+    font-weight: 500;
 }
 
-input{
+input {
 
-    width:100%;
+    border: 1px solid #ececec;
 
-    min-width:0;
+    border-radius: 12px;
 
-    border:1px solid #ececec;
+    padding: 10px;
 
-    border-radius:12px;
+    font-size: 13px;
 
-    padding:8px 10px;
+    outline: none;
 
-    font-size:13px;
+    background: #fafafa;
 
-    outline:none;
-
-    background:#fafafa;
-
-    font-family:inherit;
+    font-family: inherit;
 }
 
-.results{
+.results {
 
-    display:grid;
+    display: grid;
 
-    grid-template-columns:1fr 1fr;
+    grid-template-columns: 1fr 1fr;
 
-    gap:8px;
-
-    width:100%;
+    gap: 8px;
 }
 
-.card{
+.card {
 
-    background:#fafafa;
+    background: #fafafa;
 
-    border-radius:14px;
+    border-radius: 14px;
 
-    padding:10px;
-
-    overflow:hidden;
+    padding: 10px;
 }
 
-.card-title{
+.card-title {
 
-    font-size:9px;
+    font-size: 9px;
 
-    color:#888;
+    color: #888;
 
-    margin-bottom:4px;
+    margin-bottom: 4px;
 
-    text-transform:uppercase;
+    text-transform: uppercase;
 
-    letter-spacing:1px;
+    letter-spacing: 1px;
 }
 
-.card-value{
+.card-value {
 
-    font-size:18px;
+    font-size: 18px;
 
-    font-weight:700;
+    font-weight: 700;
 
-    color:#111;
-
-    word-break:break-word;
+    color: #111;
 }
 
-.loss{
-    color:#ef4444;
+.loss {
+
+    color: #ef4444;
 }
 
-.profit{
-    color:#22c55e;
+.profit {
+
+    color: #22c55e;
 }
 
-.rr{
+.rr {
 
-    background:#111;
+    background: #111;
 
-    color:white;
+    color: white;
 
-    border-radius:18px;
+    border-radius: 18px;
 
-    padding:14px;
+    padding: 14px;
 
-    text-align:center;
-
-    width:100%;
+    text-align: center;
 }
 
-.rr-label{
+.rr-label {
 
-    font-size:9px;
+    font-size: 9px;
 
-    opacity:.7;
+    opacity: 0.7;
 
-    margin-bottom:6px;
+    margin-bottom: 6px;
 
-    text-transform:uppercase;
+    text-transform: uppercase;
 
-    letter-spacing:1px;
+    letter-spacing: 1px;
 }
 
-.rr-value{
+.rr-value {
 
-    font-size:28px;
+    font-size: 28px;
 
-    font-weight:700;
+    font-weight: 700;
 }
 
-.badge{
+.badge {
 
-    margin-top:8px;
+    margin-top: 8px;
 
-    display:inline-block;
+    display: inline-block;
 
-    padding:6px 10px;
+    padding: 6px 10px;
 
-    border-radius:999px;
+    border-radius: 999px;
 
-    font-size:10px;
+    font-size: 10px;
 
-    font-weight:600;
+    font-weight: 600;
 }
 
-.good{
+.good {
 
-    background:rgba(34,197,94,.15);
+    background: rgba(34,197,94,0.15);
 
-    color:#22c55e;
+    color: #22c55e;
 }
 
-.ok{
+.ok {
 
-    background:rgba(251,191,36,.15);
+    background: rgba(251,191,36,0.15);
 
-    color:#f59e0b;
+    color: #f59e0b;
 }
 
-.bad{
+.bad {
 
-    background:rgba(239,68,68,.15);
+    background: rgba(239,68,68,0.15);
 
-    color:#ef4444;
-}
-
-@media (max-width:350px){
-
-    .widget{
-        padding:12px;
-    }
-
-    .card-value{
-        font-size:16px;
-    }
-
-    .rr-value{
-        font-size:24px;
-    }
+    color: #ef4444;
 }
 
 </style>
@@ -277,13 +256,6 @@ Quick Position Sizing
 </div>
 
 <div class="grid">
-
-    <div class="field" style="grid-column:span 2;">
-<label>
-<input type="checkbox" id="percentMode">
-Use Percentage Mode
-</label>
-</div>
 
 <div class="field">
 
@@ -320,7 +292,7 @@ value="500">
 
 <div class="field">
 
-<label id="slLabel">Stop Loss</label>
+<label>Stop Loss</label>
 
 <input
 type="number"
@@ -331,7 +303,8 @@ value="490">
 
 <div class="field">
 
-<label id="targetLabel">Target</label>
+<label>Target</label>
+
 <input
 type="number"
 id="target"
@@ -446,85 +419,7 @@ inputs.forEach(input => {
         calculate
     );
 });
-const percentMode =
-document.getElementById('percentMode');
 
-percentMode.addEventListener('change', () => {
-
-    const entry =
-    parseFloat(
-        document.getElementById('entry').value
-    ) || 0;
-
-    const slInput =
-    document.getElementById('sl');
-
-    const targetInput =
-    document.getElementById('target');
-
-    const slLabel =
-    document.getElementById('slLabel');
-
-    const targetLabel =
-    document.getElementById('targetLabel');
-
-    if (percentMode.checked) {
-
-        const slPrice =
-        parseFloat(slInput.value) || 0;
-
-        const targetPrice =
-        parseFloat(targetInput.value) || 0;
-
-        const slPct =
-        Math.abs(entry - slPrice)
-        / entry * 100;
-
-        const tpPct =
-        Math.abs(targetPrice - entry)
-        / entry * 100;
-
-        slInput.value =
-        slPct.toFixed(2);
-
-        targetInput.value =
-        tpPct.toFixed(2);
-
-        slLabel.innerText =
-        'SL %';
-
-        targetLabel.innerText =
-        'TP %';
-    }
-    else {
-
-        const slPct =
-        parseFloat(slInput.value) || 0;
-
-        const tpPct =
-        parseFloat(targetInput.value) || 0;
-
-        slInput.value =
-        (
-            entry *
-            (1 - slPct / 100)
-        ).toFixed(2);
-
-        targetInput.value =
-        (
-            entry *
-            (1 + tpPct / 100)
-        ).toFixed(2);
-
-        slLabel.innerText =
-        'Stop Loss';
-
-        targetLabel.innerText =
-        'Target';
-    }
-
-    calculate();
-});
 function formatINR(num) {
 
     return '₹' +
@@ -549,44 +444,15 @@ function calculate() {
         document.getElementById('entry').value
     ) || 0;
 
-  let sl;
-let target;
-
-if (
-    document.getElementById('percentMode')
-    .checked
-) {
-
-    const slPct =
+    const sl =
     parseFloat(
         document.getElementById('sl').value
     ) || 0;
 
-    const tpPct =
+    const target =
     parseFloat(
         document.getElementById('target').value
     ) || 0;
-
-    sl =
-    entry *
-    (1 - slPct / 100);
-
-    target =
-    entry *
-    (1 + tpPct / 100);
-}
-else {
-
-    sl =
-    parseFloat(
-        document.getElementById('sl').value
-    ) || 0;
-
-    target =
-    parseFloat(
-        document.getElementById('target').value
-    ) || 0;
-}
 
     const leverage =
     parseFloat(
