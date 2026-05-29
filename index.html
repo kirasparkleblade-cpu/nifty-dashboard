@@ -1,11 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>NIFTY 50 Widget</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+
+html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#ffffff;
+    font-family:'Space Grotesk',sans-serif;
+}
+
+body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.widget{
+    width:92vw;
+    height:82vh;
+    background:#ffffff;
+    border:1px solid #e5e5e5;
+    border-radius:32px;
+    padding:42px;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:22px;
+}
+
+.header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.label{
+    color:#6b6b6f;
+    font-size:clamp(18px,1.5vw,28px);
+    font-weight:500;
+    letter-spacing:1px;
+    text-transform:uppercase;
+}
+
+.refresh-btn{
+    width:28px;
+    height:28px;
+    border:1px solid #e5e5e5;
+    border-radius:50%;
+    background:#fff;
+    cursor:pointer;
+    color:#777;
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.refresh-btn:hover{
+    background:#f7f7f7;
+}
+
+.price{
+    color:#111111;
+    font-size:clamp(56px,8vw,120px);
+    font-weight:700;
+    line-height:1;
+    letter-spacing:-2px;
+    font-variant-numeric:tabular-nums lining-nums;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="widget">
+
+    <div class="header">
+
+        <div class="label">
+            NIFTY 50
+        </div>
+
+        <button
+            class="refresh-btn"
+            onclick="fetchPrice()">
+            ↻
+        </button>
+
+    </div>
+
+    <div
+        class="price"
+        id="price">
+        Loading...
+    </div>
+
+</div>
+
 <script>
 
 const CSV_URL =
 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSnV2YkleLyZu7oH4sRkaSV1k1KToH05LgWDi4xR0wcKquNeuI8134CcF3n8O1OlbvAIedrQq4XvS4f/pub?output=csv';
 
-async function fetchPrice() {
+async function fetchPrice(){
 
-    try {
+    try{
 
         const response =
         await fetch(
@@ -21,17 +139,19 @@ async function fetchPrice() {
         let currentPrice = null;
         let previousClose = null;
 
-        rows.forEach(row => {
+        for(let i = 1; i < rows.length; i++){
 
             const columns =
-            row.split(',');
+            rows[i]
+            .replace(/"/g,'')
+            .split(',');
 
             const symbol =
             columns[0]
-            ?.trim()
+            .trim()
             .toUpperCase();
 
-            if(symbol === 'NIFTY') {
+            if(symbol === 'NIFTY'){
 
                 currentPrice =
                 parseFloat(columns[1]);
@@ -39,9 +159,9 @@ async function fetchPrice() {
                 previousClose =
                 parseFloat(columns[2]);
 
+                break;
             }
-
-        });
+        }
 
         if(
             currentPrice === null ||
@@ -57,29 +177,23 @@ async function fetchPrice() {
         currentPrice.toLocaleString(
             'en-IN',
             {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+                minimumFractionDigits:2,
+                maximumFractionDigits:2
             }
         );
 
         if(
-            previousClose &&
+            previousClose !== null &&
             !isNaN(previousClose)
         ){
 
-            if(
-                currentPrice >
-                previousClose
-            ){
+            if(currentPrice > previousClose){
 
                 priceEl.style.color =
                 '#16a34a';
 
             }
-            else if(
-                currentPrice <
-                previousClose
-            ){
+            else if(currentPrice < previousClose){
 
                 priceEl.style.color =
                 '#dc2626';
@@ -91,7 +205,6 @@ async function fetchPrice() {
                 '#111111';
 
             }
-
         }
 
     }
@@ -104,9 +217,7 @@ async function fetchPrice() {
         .getElementById('price')
         .innerText =
         'Unavailable';
-
     }
-
 }
 
 fetchPrice();
@@ -117,3 +228,6 @@ setInterval(
 );
 
 </script>
+
+</body>
+</html>
