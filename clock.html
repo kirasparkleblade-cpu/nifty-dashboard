@@ -2,127 +2,215 @@
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:Inter,sans-serif;background:transparent;padding:8px;}
-.widget{width:100%;max-width:340px;margin:0 auto;background:#fff;border:1px solid #ececec;border-radius:22px;overflow:hidden;}
+body{padding:8px;background:transparent;}
 
-.header{display:flex;justify-content:flex-end;align-items:center;padding:12px 14px;border-bottom:1px solid #f2f2f2;}
-.switch{display:flex;background:#f5f5f5;border-radius:9px;padding:3px;gap:2px;}
-.switch button{border:none;background:transparent;color:#888;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;transition:0.2s;font-family:inherit;}
-.switch button.active{background:#111;color:#fff;}
+.wrap{
+  max-width:340px;margin:0 auto;
+  background:var(--color-background-primary);
+  border:0.5px solid var(--color-border-tertiary);
+  border-radius:22px;overflow:hidden;
+  font-family:'Inter',sans-serif;
+}
 
-.clock-section{padding:14px 16px 10px;text-align:center;}
-.time-row{display:flex;align-items:baseline;justify-content:center;gap:5px;}
-.time{font-family:'Space Grotesk',sans-serif;font-size:46px;font-weight:700;color:#111;letter-spacing:-2px;line-height:1;}
-.ampm{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:#111;}
-.date-text{margin-top:5px;color:#999;font-size:12px;font-weight:500;}
+.hdr{
+  display:flex;justify-content:flex-end;align-items:center;
+  padding:10px 14px;
+  border-bottom:0.5px solid var(--color-border-tertiary);
+}
+.seg{display:flex;background:var(--color-background-secondary);border-radius:8px;padding:3px;gap:2px;}
+.seg button{
+  border:none;background:transparent;color:var(--color-text-secondary);
+  padding:4px 11px;border-radius:6px;font-size:11px;font-weight:500;
+  cursor:pointer;font-family:inherit;transition:.15s;
+}
+.seg button.on{
+  background:var(--color-text-primary);color:var(--color-background-primary);
+}
 
-.calendar{margin:0 12px 12px;border:1px solid #f0f0f0;border-radius:14px;overflow:hidden;}
-.cal-top{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:#fafafa;border-bottom:1px solid #f0f0f0;}
-.cal-month{font-weight:700;font-size:13px;color:#222;}
-.cal-year{font-size:12px;color:#aaa;font-weight:500;}
+.clock-wrap{padding:20px 20px 6px;text-align:center;}
+.time-row{display:flex;align-items:baseline;justify-content:center;gap:0;}
+.time{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:64px;font-weight:700;
+  color:var(--color-text-primary);
+  letter-spacing:-3px;line-height:1;
+}
+.date-str{margin-top:8px;font-size:13px;color:var(--color-text-secondary);font-weight:400;}
 
-.day-names{display:grid;grid-template-columns:repeat(7,1fr);padding:7px 8px 2px;}
-.day-name{text-align:center;font-size:9px;color:#bbb;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}
+.status-row{
+  display:flex;align-items:center;justify-content:center;
+  padding:10px 16px 14px;gap:8px;
+}
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;border-radius:999px;font-size:11px;font-weight:500;
+}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.p-open{background:#eaf3de;color:#3b6d11;}.p-open .dot{background:#639922;}
+.p-pre{background:#faeeda;color:#854f0b;}.p-pre .dot{background:#ef9f27;}
+.p-journal{background:#eeedfe;color:#3c3489;}.p-journal .dot{background:#7f77dd;}
+.p-post{background:#e6f1fb;color:#0c447c;}.p-post .dot{background:#378add;}
+.p-closed{background:#fcebeb;color:#a32d2d;}.p-closed .dot{background:#e24b4a;}
+.p-weekly{background:#fbeaf0;color:#72243e;}.p-weekly .dot{background:#d4537e;}
+.p-holiday{background:#faeeda;color:#854f0b;}.p-holiday .dot{background:#ef9f27;}
 
-.dates{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:2px 6px 8px;}
-.date-box{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:11px;color:#555;font-weight:500;}
-.today{background:#111;color:#fff;font-weight:700;border-radius:8px;}
-.other-month{color:#e0e0e0;}
-.weekend{color:#bbb;}
-.today.weekend{color:#fff;}
+.cal{
+  margin:0 12px 12px;
+  border:0.5px solid var(--color-border-tertiary);
+  border-radius:var(--border-radius-lg);overflow:hidden;
+}
+.cal-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 14px;
+  background:var(--color-background-secondary);
+  border-bottom:0.5px solid var(--color-border-tertiary);
+}
+.cal-left{display:flex;align-items:baseline;gap:8px;}
+.cal-month{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.cal-year{font-size:12px;color:var(--color-text-tertiary);}
+.cal-badge{font-size:10px;font-weight:500;padding:3px 8px;border-radius:999px;}
+.b-open{background:#eaf3de;color:#3b6d11;}
+.b-closed{background:#fcebeb;color:#a32d2d;}
+.b-holiday{background:#faeeda;color:#854f0b;}
+
+.day-row{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 10px 3px;}
+.dn{text-align:center;font-size:9px;color:var(--color-text-tertiary);font-weight:500;text-transform:uppercase;letter-spacing:.3px;}
+
+.date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:2px 8px 10px;}
+.db{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  border-radius:7px;font-size:11px;color:var(--color-text-primary);font-weight:400;
+  position:relative;
+}
+.db.other{color:var(--color-text-tertiary);}
+.db.wknd{color:var(--color-text-tertiary);}
+.db.hol{color:#e24b4a;font-weight:500;}
+.db.hol::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:#e24b4a;}
+.db.today{background:var(--color-text-primary);color:var(--color-background-primary);font-weight:500;border-radius:8px;}
+.db.today.hol{background:#e24b4a;color:#fff;}
+.db.today.hol::after{background:#fff;}
 </style>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
 
-<div class="widget">
-  <div class="header">
-    <div class="switch">
-      <button id="btn12" class="active">12H</button>
-      <button id="btn24">24H</button>
+<div class="wrap">
+  <div class="hdr">
+    <div class="seg">
+      <button class="on" id="b12">12H</button>
+      <button id="b24">24H</button>
     </div>
   </div>
 
-  <div class="clock-section">
+  <div class="clock-wrap">
     <div class="time-row">
-      <div class="time" id="clock">00:00:00</div>
-      <div class="ampm" id="ampm">AM</div>
+      <div class="time" id="clk">--:--:--</div>
     </div>
-    <div class="date-text" id="dateText">Saturday, May 30, 2026</div>
+    <div class="date-str" id="dstr">—</div>
   </div>
 
-  <div class="calendar">
-    <div class="cal-top">
-      <div class="cal-month" id="calMonth">May</div>
-      <div class="cal-year" id="calYear">2026</div>
+  <div class="status-row">
+    <div class="pill p-pre" id="pill"><div class="dot"></div><span id="pillTxt">Loading…</span></div>
+  </div>
+
+  <div class="cal">
+    <div class="cal-hdr">
+      <div class="cal-left">
+        <div class="cal-month" id="calMonth">—</div>
+        <div class="cal-year" id="calYear">—</div>
+      </div>
+      <div class="cal-badge b-open" id="calBadge"></div>
     </div>
-    <div class="day-names">
-      <div class="day-name">Su</div>
-      <div class="day-name">Mo</div>
-      <div class="day-name">Tu</div>
-      <div class="day-name">We</div>
-      <div class="day-name">Th</div>
-      <div class="day-name">Fr</div>
-      <div class="day-name">Sa</div>
+    <div class="day-row">
+      <div class="dn">Su</div><div class="dn">Mo</div><div class="dn">Tu</div>
+      <div class="dn">We</div><div class="dn">Th</div><div class="dn">Fr</div><div class="dn">Sa</div>
     </div>
-    <div class="dates" id="dates"></div>
+    <div class="date-grid" id="dgrid"></div>
   </div>
 </div>
 
 <script>
-let is24Hour=false;
-document.getElementById('btn12').onclick=()=>{is24Hour=false;document.getElementById('btn12').classList.add('active');document.getElementById('btn24').classList.remove('active');updateClock();};
-document.getElementById('btn24').onclick=()=>{is24Hour=true;document.getElementById('btn24').classList.add('active');document.getElementById('btn12').classList.remove('active');updateClock();};
-
-function updateClock(){
-  const now=new Date();
-  let h=now.getHours();
-  const mm=String(now.getMinutes()).padStart(2,'0');
-  const ss=String(now.getSeconds()).padStart(2,'0');
-  const ampmEl=document.getElementById('ampm');
-  if(!is24Hour){
-    ampmEl.textContent=h>=12?'PM':'AM';
-    ampmEl.style.display='';
-    h=h%12||12;
-  } else {
-    ampmEl.style.display='none';
-  }
-  document.getElementById('clock').textContent=String(h).padStart(2,'0')+':'+mm+':'+ss;
-  document.getElementById('dateText').textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+const KNOWN={
+  2025:{'2025-01-26':'Republic Day','2025-02-26':'Mahashivratri','2025-03-14':'Holi','2025-04-10':'Id-Ul-Fitr','2025-04-14':'Dr. Ambedkar Jayanti','2025-04-18':'Good Friday','2025-05-01':'Maharashtra Day','2025-08-15':'Independence Day','2025-08-27':'Ganesh Chaturthi','2025-10-02':'Gandhi Jayanti','2025-10-21':'Dussehra','2025-11-05':'Diwali (Laxmi Pujan)','2025-11-06':'Diwali (Balipratipada)','2025-11-15':'Gurunanak Jayanti','2025-12-25':'Christmas'},
+  2026:{'2026-01-15':'Maharashtra Election','2026-01-26':'Republic Day','2026-03-03':'Holi','2026-03-26':'Ram Navami','2026-03-31':'Mahavir Jayanti','2026-04-03':'Good Friday','2026-04-14':'Dr. Ambedkar Jayanti','2026-05-01':'Maharashtra Day','2026-05-28':'Bakri Id','2026-06-26':'Muharram','2026-09-14':'Ganesh Chaturthi','2026-10-02':'Gandhi Jayanti','2026-10-20':'Diwali Laxmi Puja','2026-10-21':'Diwali Balipratipada','2026-11-05':'Gurunanak Jayanti','2026-12-25':'Christmas'}
+};
+const FIXED=[{m:1,d:26,n:'Republic Day'},{m:8,d:15,n:'Independence Day'},{m:10,d:2,n:'Gandhi Jayanti'},{m:12,d:25,n:'Christmas'}];
+const cache={};
+function pk(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+function getHols(y){
+  if(cache[y])return cache[y];
+  const base=KNOWN[y]?{...KNOWN[y]}:{};
+  if(!KNOWN[y])for(const f of FIXED){const k=y+'-'+String(f.m).padStart(2,'0')+'-'+String(f.d).padStart(2,'0');const dw=new Date(k).getDay();if(dw!==0&&dw!==6)base[k]=f.n;}
+  cache[y]=base;return base;
 }
 
-function generateCalendar(){
+let h24=false,curY=new Date().getFullYear(),hols=getHols(curY);
+
+document.getElementById('b12').onclick=()=>{h24=false;document.getElementById('b12').className='on';document.getElementById('b24').className='';tick();};
+document.getElementById('b24').onclick=()=>{h24=true;document.getElementById('b24').className='on';document.getElementById('b12').className='';tick();};
+
+function getSession(now){
+  const dow=now.getDay(),hm=now.getHours()*60+now.getMinutes();
+  const key=pk(now.getFullYear(),now.getMonth(),now.getDate());
+  if(dow===0||dow===6)return{label:'Weekly analysis · Market closed',cls:'p-weekly'};
+  if(hols[key])return{label:'Market holiday · '+hols[key],cls:'p-holiday'};
+  if(hm<9*60+15)return{label:'Pre-market analysis · 12:00 AM – 9:15 AM',cls:'p-pre'};
+  if(hm<15*60+30)return{label:'Market open · 9:15 AM – 3:30 PM',cls:'p-open'};
+  if(hm<17*60)return{label:'Trade journaling · 3:30 – 5:00 PM',cls:'p-journal'};
+  return{label:'Post-market analysis · 5:00 – 12:00 AM',cls:'p-post'};
+}
+
+function tick(){
   const now=new Date();
-  const year=now.getFullYear(),month=now.getMonth(),today=now.getDate();
+  const y=now.getFullYear();
+  if(y!==curY){curY=y;hols=getHols(y);buildCal();}
+
+  let hr=now.getHours();
+  const mm=String(now.getMinutes()).padStart(2,'0'),ss=String(now.getSeconds()).padStart(2,'0');
+  let timeStr;
+  if(!h24){
+    const ap=hr>=12?' PM':' AM';hr=hr%12||12;
+    timeStr=String(hr).padStart(2,'0')+':'+mm+':'+ss+ap;
+  }else{
+    timeStr=String(hr).padStart(2,'0')+':'+mm+':'+ss;
+  }
+  document.getElementById('clk').textContent=timeStr;
+  document.getElementById('dstr').textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const s=getSession(now);
+  const pill=document.getElementById('pill');
+  pill.className='pill '+s.cls;
+  document.getElementById('pillTxt').textContent=s.label;
+
+  const dow=now.getDay(),key=pk(y,now.getMonth(),now.getDate());
+  const badge=document.getElementById('calBadge');
+  if(dow===0||dow===6){badge.textContent='Closed';badge.className='cal-badge b-closed';}
+  else if(hols[key]){badge.textContent='Holiday';badge.className='cal-badge b-holiday';}
+  else{badge.textContent='Open';badge.className='cal-badge b-open';}
+}
+
+function buildCal(){
+  const now=new Date();
+  const y=now.getFullYear(),m=now.getMonth(),td=now.getDate();
   document.getElementById('calMonth').textContent=now.toLocaleString('default',{month:'long'});
-  document.getElementById('calYear').textContent=year;
-  const dates=document.getElementById('dates');
-  dates.innerHTML='';
-  const firstDay=new Date(year,month,1).getDay();
-  const daysInMonth=new Date(year,month+1,0).getDate();
-  const prevDays=new Date(year,month,0).getDate();
-  for(let i=0;i<firstDay;i++){
-    const d=document.createElement('div');
-    d.className='date-box other-month';
-    d.textContent=prevDays-firstDay+1+i;
-    dates.appendChild(d);
-  }
-  for(let d=1;d<=daysInMonth;d++){
+  document.getElementById('calYear').textContent=y;
+  const g=document.getElementById('dgrid');g.innerHTML='';
+  const first=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),prev=new Date(y,m,0).getDate();
+  for(let i=0;i<first;i++){const d=document.createElement('div');d.className='db other';d.textContent=prev-first+1+i;g.appendChild(d);}
+  for(let d=1;d<=dim;d++){
     const div=document.createElement('div');
-    const dow=new Date(year,month,d).getDay();
-    div.className='date-box'+(d===today?' today':'')+(dow===0||dow===6?' weekend':'');
-    div.textContent=d;
-    dates.appendChild(div);
+    const dow=new Date(y,m,d).getDay(),key=pk(y,m,d);
+    let cls='db';
+    if(d===td)cls+=' today';
+    else if(dow===0||dow===6)cls+=' wknd';
+    if(hols[key])cls+=' hol';
+    div.className=cls;div.textContent=d;
+    if(hols[key])div.title=hols[key];
+    g.appendChild(div);
   }
-  const remaining=42-firstDay-daysInMonth;
-  for(let i=1;i<=remaining;i++){
-    const d=document.createElement('div');
-    d.className='date-box other-month';
-    d.textContent=i;
-    dates.appendChild(d);
-  }
+  const rem=42-first-dim;
+  for(let i=1;i<=rem;i++){const d=document.createElement('div');d.className='db other';d.textContent=i;g.appendChild(d);}
 }
 
-updateClock();
-generateCalendar();
-setInterval(updateClock,1000);
+buildCal();tick();
+setInterval(tick,1000);
 </script>
