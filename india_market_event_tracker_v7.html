@@ -1,0 +1,340 @@
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{padding:8px;background:transparent;}
+.wrap{max-width:340px;margin:0 auto;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:22px;overflow:hidden;font-family:'Inter',sans-serif;}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--color-border-tertiary);}
+.hdr-title{font-size:11px;font-weight:600;color:var(--color-text-primary);letter-spacing:.3px;text-transform:uppercase;}
+.hdr-right{display:flex;align-items:center;gap:7px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:livepulse 2s ease-in-out infinite;}
+@keyframes livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.4);}50%{opacity:.8;box-shadow:0 0 0 4px rgba(34,197,94,0);}}
+.next-refresh{font-size:10px;color:var(--color-text-tertiary);font-variant-numeric:tabular-nums;letter-spacing:.2px;}
+.meta{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-bottom:0.5px solid var(--color-border-tertiary);}
+.meta-date{font-size:10px;color:var(--color-text-tertiary);}
+.powered{font-size:10px;color:var(--color-text-tertiary);display:flex;align-items:center;gap:4px;}
+.g-dot{width:7px;height:7px;border-radius:50%;background:conic-gradient(#4285f4 0deg 90deg,#34a853 90deg 180deg,#fbbc05 180deg 270deg,#ea4335 270deg 360deg);flex-shrink:0;}
+.events{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto;}
+.events::-webkit-scrollbar{width:3px;}
+.events::-webkit-scrollbar-thumb{background:var(--color-border-secondary);border-radius:99px;}
+.event-card{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:12px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);}
+.event-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px;}
+.icon-rbi{background:#faeeda;}.icon-fo{background:#eeedfe;}.icon-budget{background:#eaf3de;}.icon-earnings{background:#e6f1fb;}.icon-global{background:#fbeaf0;}.icon-data{background:#fff3e0;}.icon-other{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);}
+.event-body{flex:1;min-width:0;}
+.event-title{font-size:12px;font-weight:500;color:var(--color-text-primary);line-height:1.3;}
+.event-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px;}
+.event-date{font-size:10px;color:var(--color-text-secondary);}
+.event-tag{font-size:9px;font-weight:500;padding:2px 6px;border-radius:999px;}
+.tag-rbi{background:#faeeda;color:#854f0b;}.tag-fo{background:#eeedfe;color:#3c3489;}.tag-budget{background:#eaf3de;color:#3b6d11;}.tag-earnings{background:#e6f1fb;color:#0c447c;}.tag-global{background:#fbeaf0;color:#72243e;}.tag-data{background:#fff3e0;color:#7c4a00;}.tag-other{background:var(--color-background-secondary);color:var(--color-text-secondary);}
+.countdown{margin-left:auto;font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap;flex-shrink:0;font-variant-numeric:tabular-nums;letter-spacing:.3px;}
+.cd-today{background:#e24b4a;color:#fff;animation:pulse-red 1s ease-in-out infinite;}
+@keyframes pulse-red{0%,100%{opacity:1;}50%{opacity:.75;}}
+.cd-soon{background:#faeeda;color:#854f0b;}
+.cd-upcoming{background:var(--color-background-primary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-secondary);}
+.state{padding:28px 20px;text-align:center;}
+.state-icon{font-size:26px;margin-bottom:8px;}
+.state-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:5px;}
+.state-sub{font-size:11px;color:var(--color-text-secondary);line-height:1.5;word-break:break-word;}
+.loading-dots{display:flex;justify-content:center;gap:5px;margin-top:8px;}
+.loading-dots span{width:6px;height:6px;border-radius:50%;background:var(--color-text-tertiary);animation:ldpulse 1.2s ease-in-out infinite;}
+.loading-dots span:nth-child(2){animation-delay:.2s;}
+.loading-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes ldpulse{0%,100%{opacity:.3;transform:scale(.8);}50%{opacity:1;transform:scale(1);}}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-title">Market Events</div>
+    <div class="hdr-right">
+      <div class="live-dot"></div>
+      <span class="next-refresh" id="nextRefresh"></span>
+    </div>
+  </div>
+  <div class="meta" id="metaRow" style="display:none;">
+    <div class="meta-date" id="metaDate">—</div>
+    <div class="powered"><div class="g-dot"></div><span id="modelUsed">Gemini</span></div>
+  </div>
+  <div id="content">
+    <div class="state">
+      <div class="state-icon">⏳</div>
+      <div class="state-title">Loading events…</div>
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+//  CONFIG — point this to your own Vercel deployment domain
+//  No API key here. The key lives in Vercel → Environment Variables.
+// ─────────────────────────────────────────────────────────────────
+const BASE_URL = '';  // leave empty = same origin (works when hosted on Vercel)
+                      // If you embed via iframe from Notion, set to:
+                      // 'https://nifty-dashboard-chi.vercel.app'
+
+const MODELS_ENDPOINT  = `${BASE_URL}/api/gemini-models`;
+const CONTENT_ENDPOINT = `${BASE_URL}/api/gemini`;  // POST { model, body }
+
+const CACHE_KEY       = 'mkt_v7';
+const CACHE_TTL       = 4 * 60 * 60 * 1000;   // 4 h cache
+const REFRESH_MS      = 15 * 60 * 1000;        // 15 min auto-refresh
+const PREFERRED       = ['gemini-2.5-flash','gemini-2.5-flash-lite',
+                         'gemini-2.5-flash-preview-05-20','gemini-2.5-pro',
+                         'gemini-2.0-flash','gemini-2.0-flash-lite',
+                         'gemini-1.5-flash','gemini-1.5-pro'];
+
+let usedModel = '';
+let nextRefreshAt = 0;
+let refreshTimer = null;
+let tickTimer = null;
+
+const CAT = {
+  'RBI'     :{icon:'🏦',ic:'icon-rbi',    tc:'tag-rbi'},
+  'F&O'     :{icon:'📊',ic:'icon-fo',     tc:'tag-fo'},
+  'Budget'  :{icon:'💰',ic:'icon-budget', tc:'tag-budget'},
+  'Earnings':{icon:'📈',ic:'icon-earnings',tc:'tag-earnings'},
+  'Global'  :{icon:'🌍',ic:'icon-global', tc:'tag-global'},
+  'Data'    :{icon:'📉',ic:'icon-data',   tc:'tag-data'},
+  'Other'   :{icon:'📅',ic:'icon-other',  tc:'tag-other'},
+};
+
+// ── Countdown helpers ─────────────────────────────────────────────
+function msUntil(dateStr) {
+  const now = new Date();
+  const target = new Date(dateStr + 'T00:00:00');
+  target.setHours(0,0,0,0);
+  return target - now;
+}
+
+function fmtCountdown(ms) {
+  if (ms <= 0) return 'Today';
+  const sec = Math.floor(ms / 1000);
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (d > 3)  return d + 'd';
+  if (d > 0)  return `${d}d ${pad(h)}h`;
+  if (h > 0)  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return `${pad(m)}:${pad(s)}`;
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function cdClass(ms){
+  if (ms <= 0)          return 'cd-today';
+  if (ms < 4*86400000)  return 'cd-soon';
+  return 'cd-upcoming';
+}
+
+// ── Tick every second ─────────────────────────────────────────────
+function startTick() {
+  if (tickTimer) clearInterval(tickTimer);
+  tickTimer = setInterval(() => {
+    // Update event countdowns
+    document.querySelectorAll('[data-event-date]').forEach(el => {
+      const ms = msUntil(el.dataset.eventDate);
+      el.textContent = fmtCountdown(ms);
+      el.className = 'countdown ' + cdClass(ms);
+    });
+    // Update refresh countdown in header
+    const rem = nextRefreshAt - Date.now();
+    const el = document.getElementById('nextRefresh');
+    if (el) {
+      if (rem > 0) {
+        const m = Math.floor(rem / 60000);
+        const s = Math.floor((rem % 60000) / 1000);
+        el.textContent = `↻ ${pad(m)}:${pad(s)}`;
+      } else {
+        el.textContent = '';
+      }
+    }
+  }, 1000);
+}
+
+// ── JSON extractor (handles thinking models, fences, etc.) ────────
+function extractJSON(raw) {
+  if (!raw) return null;
+  let t = raw.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
+  t = t.replace(/```(?:json)?\s*/gi,'').replace(/```\s*/g,'').trim();
+  try { const p=JSON.parse(t); if(Array.isArray(p)&&p.length) return p; } catch(e){}
+  const s=t.indexOf('['), e=t.lastIndexOf(']');
+  if (s!==-1&&e>s) { try{const p=JSON.parse(t.slice(s,e+1));if(Array.isArray(p)&&p.length)return p;}catch(e2){} }
+  const os=t.indexOf('{'), oe=t.lastIndexOf('}');
+  if (os!==-1&&oe>os) { try{const o=JSON.parse(t.slice(os,oe+1));const a=Object.values(o).find(v=>Array.isArray(v)&&v.length);if(a)return a;}catch(e3){} }
+  const objs=[]; const re=/\{[^{}]*(?:\{[^{}]*\}[^{}]*)?\}/g; let m;
+  while((m=re.exec(t))!==null){try{const o=JSON.parse(m[0]);if(o.title&&o.date)objs.push(o);}catch(e4){}}
+  return objs.length ? objs : null;
+}
+
+// ── UI helpers ────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('content').innerHTML =
+    `<div class="state"><div class="state-icon">🔍</div><div class="state-title">${msg}</div><div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+}
+function showError(msg) {
+  document.getElementById('content').innerHTML =
+    `<div class="state"><div class="state-icon">⚠️</div><div class="state-title">Could not load</div><div class="state-sub">${msg}</div></div>`;
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function renderEvents(events) {
+  document.getElementById('metaDate').textContent =
+    'Updated ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('metaRow').style.display = 'flex';
+  document.getElementById('modelUsed').textContent = usedModel || 'Gemini';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = events.filter(e => {
+    if (!e.date) return true;
+    const d = new Date(e.date + 'T00:00:00'); d.setHours(0,0,0,0);
+    return d >= today;
+  });
+
+  if (!upcoming.length) {
+    document.getElementById('content').innerHTML =
+      `<div class="state"><div class="state-icon">✅</div><div class="state-title">No upcoming events</div></div>`;
+    return;
+  }
+
+  let html = '<div class="events">';
+  for (const ev of upcoming) {
+    const cat = CAT[ev.category] || CAT['Other'];
+    const ms = ev.date ? msUntil(ev.date) : null;
+    const badge = ev.date
+      ? `<span class="countdown ${cdClass(ms)}" data-event-date="${ev.date}">${fmtCountdown(ms)}</span>`
+      : '';
+    const dl = ev.date
+      ? new Date(ev.date + 'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
+      : (ev.dateText || '');
+    html += `<div class="event-card">
+      <div class="event-icon ${cat.ic}">${cat.icon}</div>
+      <div class="event-body">
+        <div class="event-title">${ev.title}</div>
+        <div class="event-meta">
+          <span class="event-date">${dl}</span>
+          <span class="event-tag ${cat.tc}">${ev.category}</span>
+          ${badge}
+        </div>
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+  startTick();
+}
+
+// ── API calls (go through /api/* proxy — key never in browser) ────
+async function getModel() {
+  const r = await fetch(MODELS_ENDPOINT);
+  if (!r.ok) throw new Error('Could not reach API proxy');
+  const data = await r.json();
+  const avail = (data.models || [])
+    .filter(m => (m.supportedGenerationMethods||[]).includes('generateContent'))
+    .map(m => m.name.replace('models/',''));
+  for (const p of PREFERRED) {
+    const found = avail.find(a => a===p || a.startsWith(p+'-'));
+    if (found) return found;
+  }
+  const flash = avail.find(m => m.toLowerCase().includes('flash'));
+  if (flash) return flash;
+  if (avail.length) return avail[0];
+  throw new Error('No models available');
+}
+
+async function loadEvents(forceRefresh) {
+  if (!forceRefresh) {
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (c && Date.now() - c.ts < CACHE_TTL) {
+        usedModel = c.model || '';
+        renderEvents(c.events);
+        return;
+      }
+    } catch(e) {}
+  }
+
+  showLoading('Connecting…');
+
+  try {
+    const model = await getModel();
+    usedModel = model;
+    showLoading('Fetching events…');
+
+    const today = new Date();
+    const ds = today.toISOString().split('T')[0];
+    const end = new Date(today); end.setDate(today.getDate() + 45);
+    const es = end.toISOString().split('T')[0];
+
+    const prompt = `List upcoming Indian stock market events from ${ds} to ${es}.
+
+For each event output one line in this exact format (no other text):
+DATE|TITLE|CATEGORY
+
+Where DATE is YYYY-MM-DD, TITLE is under 8 words, CATEGORY is one of: RBI F&O Budget Earnings Global Data Other
+
+Include: every Thursday NSE F&O expiry, monthly expiry last Thursday, RBI MPC meetings, India CPI WPI GDP IIP data releases, major Nifty50 quarterly earnings, US Fed FOMC meetings.
+
+Output ONLY the pipe-separated lines. No headers. No explanation. No JSON. Just the lines.`;
+
+    const r = await fetch(CONTENT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        body: {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0, maxOutputTokens: 3000 }
+        }
+      })
+    });
+
+    if (!r.ok) { const e = await r.json(); throw new Error(e?.error?.message || 'HTTP ' + r.status); }
+    const data = await r.json();
+
+    let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    raw = raw.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
+
+    let events = extractJSON(raw);
+
+    if (!events || !events.length) {
+      events = [];
+      const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l&&l.includes('|'));
+      for (const line of lines) {
+        const parts = line.split('|').map(p=>p.trim());
+        if (parts.length >= 3) {
+          const [date,title,category] = parts;
+          if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            const validCats = ['RBI','F&O','Budget','Earnings','Global','Data','Other'];
+            const cat = validCats.find(c=>category.includes(c)) || 'Other';
+            const d = new Date(date+'T00:00:00');
+            events.push({ title, date,
+              dateText: d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),
+              category: cat });
+          }
+        }
+      }
+    }
+
+    if (!events || !events.length) throw new Error('No events returned. Try again.');
+    events.sort((a,b) => a.date > b.date ? 1 : -1);
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ts:Date.now(),events,model})); } catch(e){}
+    renderEvents(events);
+
+  } catch(err) {
+    showError(err.message || 'Unknown error');
+  }
+}
+
+// ── Auto-refresh every 15 min ─────────────────────────────────────
+function scheduleRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  nextRefreshAt = Date.now() + REFRESH_MS;
+  refreshTimer = setInterval(() => {
+    nextRefreshAt = Date.now() + REFRESH_MS;
+    loadEvents(true);
+  }, REFRESH_MS);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────
+loadEvents(false);
+scheduleRefresh();
+startTick();
+</script>
