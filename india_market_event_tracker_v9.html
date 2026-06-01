@@ -7,8 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { background:transparent; color:#111; font-family:'DM Sans',sans-serif; height:100%; overflow:hidden; }
-  .wrap { width:100%; height:100vh; display:flex; flex-direction:column; }
+  html, body { background:transparent; color:#111; font-family:'DM Sans',sans-serif; width:100%; height:100%; overflow:hidden; }
+  .wrap { width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; }
 
   .hdr {
     display:flex; align-items:center; justify-content:space-between;
@@ -25,9 +25,9 @@
   }
   .hdr-title { font-size:11px; font-weight:600; letter-spacing:.7px; text-transform:uppercase; color:#111; }
   .hdr-right { display:flex; align-items:center; gap:6px; }
-  .data-badge {
+  .ai-badge {
     font-size:9px; font-weight:500; padding:2px 7px; border-radius:999px;
-    background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d;
+    background:#ede9fe; border:1px solid #ddd6fe; color:#5b21b6;
   }
 
   .meta {
@@ -40,15 +40,15 @@
 
   .events-wrap {
     background:#f9f9f9; border:1px solid #e8e8e8; border-radius:0 0 10px 10px;
-    flex:1; overflow:hidden; display:flex; flex-direction:column;
+    flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
   }
-  .events { display:flex; flex-direction:column; flex:1; overflow-y:auto; padding:6px; gap:5px; }
+  .events { display:flex; flex-direction:column; flex:1; min-height:0; overflow-y:auto; padding:6px; gap:5px; }
   .events::-webkit-scrollbar { width:3px; }
   .events::-webkit-scrollbar-thumb { background:#ddd; border-radius:99px; }
 
   .card {
     background:#fff; border:1px solid #ebebeb; border-radius:10px;
-    overflow:hidden; transition:box-shadow .15s,border-color .15s; flex-shrink:0;
+    transition:box-shadow .15s,border-color .15s; flex-shrink:0;
   }
   .card:hover { box-shadow:0 2px 8px rgba(0,0,0,.06); border-color:#d8d8d8; }
   .card-top { display:flex; align-items:center; gap:10px; padding:10px 12px; }
@@ -71,6 +71,19 @@
   .cp-budget{background:#dcfce7;color:#14532d;} .cp-earnings{background:#dbeafe;color:#1e3a8a;}
   .cp-global{background:#fce7f3;color:#831843;} .cp-data{background:#ffedd5;color:#7c2d12;}
   .cp-other{background:#f3f4f6;color:#374151;}
+
+  .state-box {
+    padding:30px 20px; text-align:center; background:#f9f9f9;
+    border:1px solid #e8e8e8; border-radius:0 0 10px 10px; flex:1;
+  }
+  .state-icon{font-size:24px;margin-bottom:8px;}
+  .state-title{font-size:12px;font-weight:500;color:#111;margin-bottom:3px;}
+  .state-sub{font-size:10px;color:#aaa;line-height:1.6;}
+  .dots{display:flex;justify-content:center;gap:5px;margin-top:10px;}
+  .dots span{width:5px;height:5px;border-radius:50%;background:#ccc;animation:dp 1.2s ease-in-out infinite;}
+  .dots span:nth-child(2){animation-delay:.2s;}
+  .dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes dp{0%,100%{opacity:.2;transform:scale(.7);}50%{opacity:1;transform:scale(1);}}
 </style>
 </head>
 <body>
@@ -81,97 +94,32 @@
       <div class="hdr-title">Market Events</div>
     </div>
     <div class="hdr-right">
-      <div class="data-badge">no API · offline</div>
+      <div class="ai-badge">AI · Gemini</div>
     </div>
   </div>
-  <div class="meta">
+  <div class="meta" id="metaRow" style="display:none;">
     <div class="meta-txt" id="metaDate">—</div>
     <div class="meta-right" id="evCount">—</div>
   </div>
-  <div id="content" style="flex:1;display:flex;flex-direction:column;">
-    <div class="events-wrap"><div class="events" id="evList"></div></div>
+  <div id="content" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+    <div class="state-box">
+      <div class="state-icon">⏳</div>
+      <div class="state-title">Loading events…</div>
+      <div class="dots"><span></span><span></span><span></span></div>
+    </div>
   </div>
 </div>
+
 <script>
-// ─────────────────────────────────────────────────────────────────
-//  STATIC EVENT DATABASE  — no API calls, no quota, always works
-//  Update this list every quarter (copy-paste new dates below)
-// ─────────────────────────────────────────────────────────────────
-const EVENTS = [
-  // ── F&O Weekly Expiries (every Thursday) ──────────────────────
-  {date:'2026-06-05', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-06-12', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-06-19', title:'NSE Monthly F&O Expiry',         category:'F&O'},
-  {date:'2026-06-26', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-07-03', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-07-10', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-07-17', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-07-23', title:'NSE Monthly F&O Expiry',         category:'F&O'},
-  {date:'2026-07-30', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-08-07', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-08-13', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-08-20', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-08-27', title:'NSE Monthly F&O Expiry',         category:'F&O'},
-  {date:'2026-09-03', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-09-10', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-09-17', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-09-24', title:'NSE Monthly F&O Expiry',         category:'F&O'},
-  {date:'2026-10-01', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-10-08', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-10-15', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-10-22', title:'NSE Monthly F&O Expiry',         category:'F&O'},
-  {date:'2026-10-29', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-11-05', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-11-12', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-11-19', title:'NSE Weekly F&O Expiry',          category:'F&O'},
-  {date:'2026-11-26', title:'NSE Monthly F&O Expiry',         category:'F&O'},
+// ── IMPORTANT: Replace with your actual Google Sheet ID ───────────────────
+// Get it from the sheet URL:
+// https://docs.google.com/spreadsheets/d/SHEET_ID_IS_HERE/edit
+const SHEET_ID  = 'REPLACE_WITH_YOUR_SHEET_ID';
+const SHEET_TAB = 'Events'; // name of the tab inside your sheet
 
-  // ── RBI MPC Meetings ──────────────────────────────────────────
-  {date:'2026-06-06', title:'RBI MPC Decision',               category:'RBI'},
-  {date:'2026-08-07', title:'RBI MPC Decision',               category:'RBI'},
-  {date:'2026-10-09', title:'RBI MPC Decision',               category:'RBI'},
-  {date:'2026-12-04', title:'RBI MPC Decision',               category:'RBI'},
+// Google Sheets public CSV export URL (no API key needed — sheet must be public)
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_TAB)}`;
 
-  // ── India Macro Data ──────────────────────────────────────────
-  {date:'2026-06-12', title:'India CPI Inflation (May)',      category:'Data'},
-  {date:'2026-06-13', title:'India WPI Inflation (May)',      category:'Data'},
-  {date:'2026-06-30', title:'India GDP Q4 FY26',              category:'Data'},
-  {date:'2026-07-14', title:'India CPI Inflation (Jun)',      category:'Data'},
-  {date:'2026-07-15', title:'India WPI Inflation (Jun)',      category:'Data'},
-  {date:'2026-07-31', title:'India IIP Data (May)',           category:'Data'},
-  {date:'2026-08-13', title:'India CPI Inflation (Jul)',      category:'Data'},
-  {date:'2026-08-14', title:'India WPI Inflation (Jul)',      category:'Data'},
-  {date:'2026-09-12', title:'India CPI Inflation (Aug)',      category:'Data'},
-  {date:'2026-09-15', title:'India WPI Inflation (Aug)',      category:'Data'},
-  {date:'2026-09-30', title:'India GDP Q1 FY27',              category:'Data'},
-  {date:'2026-10-14', title:'India CPI Inflation (Sep)',      category:'Data'},
-  {date:'2026-10-15', title:'India WPI Inflation (Sep)',      category:'Data'},
-  {date:'2026-11-13', title:'India CPI Inflation (Oct)',      category:'Data'},
-  {date:'2026-11-14', title:'India WPI Inflation (Oct)',      category:'Data'},
-
-  // ── US Fed FOMC ───────────────────────────────────────────────
-  {date:'2026-06-18', title:'US Fed FOMC Decision',           category:'Global'},
-  {date:'2026-07-29', title:'US Fed FOMC Decision',           category:'Global'},
-  {date:'2026-09-16', title:'US Fed FOMC Decision',           category:'Global'},
-  {date:'2026-11-04', title:'US Fed FOMC Decision',           category:'Global'},
-  {date:'2026-12-16', title:'US Fed FOMC Decision',           category:'Global'},
-
-  // ── Major Nifty50 Earnings (Q4 FY26 season) ──────────────────
-  {date:'2026-06-05', title:'Infosys Q4 Results',             category:'Earnings'},
-  {date:'2026-06-10', title:'TCS Q4 Results',                 category:'Earnings'},
-  {date:'2026-06-12', title:'Wipro Q4 Results',               category:'Earnings'},
-  {date:'2026-06-18', title:'HDFC Bank Q4 Results',           category:'Earnings'},
-  {date:'2026-06-20', title:'Reliance Industries Q4 Results', category:'Earnings'},
-  {date:'2026-06-23', title:'ICICI Bank Q4 Results',          category:'Earnings'},
-  {date:'2026-06-25', title:'SBI Q4 Results',                 category:'Earnings'},
-  {date:'2026-07-08', title:'HUL Q1 FY27 Results',            category:'Earnings'},
-  {date:'2026-07-15', title:'ITC Q1 FY27 Results',            category:'Earnings'},
-
-  // ── India Budget / Policy ─────────────────────────────────────
-  {date:'2026-07-01', title:'Union Budget FY27 Presentation', category:'Budget'},
-];
-
-// ─────────────────────────────────────────────────────────────────
 const CAT = {
   'RBI'     :{icon:'🏦',ci:'ci-rbi',     cp:'cp-rbi'},
   'F&O'     :{icon:'📊',ci:'ci-fo',      cp:'cp-fo'},
@@ -182,35 +130,51 @@ const CAT = {
   'Other'   :{icon:'📅',ci:'ci-other',   cp:'cp-other'},
 };
 
+// ── IST helpers ───────────────────────────────────────────────────────────
 function todayIST() {
-  const now = new Date();
-  const ist = new Date(now.getTime() + 5.5*60*60*1000);
-  return ist.toISOString().split('T')[0];
+  return new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
 }
 
-function render() {
-  const today = todayIST();
-  const upcoming = EVENTS
+// ── Parse CSV from Google Sheets ──────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  // Skip header row, parse data rows
+  // Google Sheets CSV wraps values in quotes
+  return lines.slice(1).map(line => {
+    const cols = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+    const clean = cols.map(c => c.replace(/^"|"$/g, '').trim());
+    return { date: clean[0], title: clean[1], category: clean[2] };
+  }).filter(e => e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function renderEvents(events, updatedAt) {
+  const today    = todayIST();
+  const upcoming = events
     .filter(e => e.date >= today)
-    .sort((a,b) => a.date > b.date ? 1 : -1);
+    .sort((a, b) => a.date > b.date ? 1 : -1);
 
-  // Meta bar
-  document.getElementById('metaDate').textContent =
-    'As of ' + new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-  document.getElementById('evCount').textContent = upcoming.length + ' events ahead';
+  const timeStr = updatedAt
+    ? new Date(updatedAt).toLocaleTimeString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})
+    : '—';
+  document.getElementById('metaDate').textContent = 'AI updated ' + timeStr;
+  document.getElementById('evCount').textContent  = upcoming.length + ' events ahead';
+  document.getElementById('metaRow').style.display = 'flex';
 
-  const list = document.getElementById('evList');
-  list.innerHTML = '';
+  if (!upcoming.length) {
+    document.getElementById('content').innerHTML =
+      `<div class="state-box"><div class="state-icon">✅</div><div class="state-title">No upcoming events</div></div>`;
+    return;
+  }
 
+  let html = '<div class="events-wrap"><div class="events">';
   for (const ev of upcoming) {
-    const cat    = CAT[ev.category] || CAT['Other'];
+    const cat     = CAT[ev.category] || CAT['Other'];
     const isToday = ev.date === today;
-    const dl     = new Date(ev.date+'T00:00:00')
-      .toLocaleDateString('en-IN',{day:'numeric',month:'short'});
-
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
+    const dl      = new Date(ev.date + 'T00:00:00')
+      .toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+    html += `<div class="card">
       <div class="card-top">
         <div class="cat-icon ${cat.ci}">${cat.icon}</div>
         <div class="card-info">
@@ -221,21 +185,43 @@ function render() {
             <span class="cat-pill ${cat.cp}">${ev.category}</span>
           </div>
         </div>
-      </div>`;
-    list.appendChild(card);
+      </div>
+    </div>`;
   }
+  html += '</div></div>';
+  document.getElementById('content').innerHTML = html;
+}
 
-  if (!upcoming.length) {
-    list.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;font-size:12px;">No upcoming events in database</div>';
+function showError(msg) {
+  document.getElementById('content').innerHTML =
+    `<div class="state-box">
+       <div class="state-icon">⚠️</div>
+       <div class="state-title">Could not load</div>
+       <div class="state-sub">${msg}</div>
+     </div>`;
+}
+
+// ── Fetch from Google Sheet CSV ───────────────────────────────────────────
+async function loadFromSheet() {
+  try {
+    const res = await fetch(CSV_URL + '&t=' + Date.now()); // cache bust
+    if (!res.ok) throw new Error('Sheet fetch failed: HTTP ' + res.status);
+    const text   = await res.text();
+    const events = parseCSV(text);
+    if (!events.length) throw new Error('Sheet is empty — cron may not have run yet');
+
+    // updatedAt comes from column 4 of first data row
+    const firstLine = text.trim().split('\n')[1] || '';
+    const cols      = firstLine.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+    const updatedAt = cols[3] ? cols[3].replace(/^"|"$/g, '').trim() : null;
+
+    renderEvents(events, updatedAt);
+  } catch (err) {
+    showError(err.message + '<br><br>Make sure the sheet is public and the SHEET_ID is set.');
   }
 }
 
-render();
-// Re-render at midnight IST to refresh "today" detection
-const now = new Date();
-const ist = new Date(now.getTime() + 5.5*60*60*1000);
-const msTillMidnight = (24*60*60*1000) - (ist.getHours()*3600 + ist.getMinutes()*60 + ist.getSeconds())*1000 + 500;
-setTimeout(() => { render(); setInterval(render, 24*60*60*1000); }, msTillMidnight);
+loadFromSheet();
 </script>
 </body>
 </html>
