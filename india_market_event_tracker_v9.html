@@ -17,10 +17,7 @@
     flex-shrink:0;
   }
   .hdr-left { display:flex; align-items:center; gap:8px; }
-  .live-ring {
-    width:7px; height:7px; border-radius:50%; background:#22c55e;
-    animation:ring 2s ease-in-out infinite;
-  }
+  .live-ring { width:7px; height:7px; border-radius:50%; background:#22c55e; animation:ring 2s ease-in-out infinite; }
   @keyframes ring {
     0%  { box-shadow:0 0 0 0 rgba(34,197,94,.5); }
     70% { box-shadow:0 0 0 5px rgba(34,197,94,0); }
@@ -28,11 +25,9 @@
   }
   .hdr-title { font-size:11px; font-weight:600; letter-spacing:.7px; text-transform:uppercase; color:#111; }
   .hdr-right { display:flex; align-items:center; gap:6px; }
-  .refresh-cd { font-family:'DM Mono',monospace; font-size:10px; color:#aaa; }
-  .stale-badge {
-    font-size:9px; font-weight:500; padding:2px 6px; border-radius:999px;
-    background:#fff7ed; border:1px solid #fed7aa; color:#c2410c;
-    display:none;
+  .data-badge {
+    font-size:9px; font-weight:500; padding:2px 7px; border-radius:999px;
+    background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d;
   }
 
   .meta {
@@ -41,19 +36,13 @@
     border:1px solid #e8e8e8; border-bottom:none; flex-shrink:0;
   }
   .meta-txt  { font-size:10px; color:#aaa; font-family:'DM Mono',monospace; }
-  .model-badge {
-    font-size:9px; font-weight:500; padding:2px 7px; border-radius:999px;
-    background:#f0f0f0; border:1px solid #e0e0e0; color:#888;
-  }
+  .meta-right { font-size:9px; font-weight:500; padding:2px 7px; border-radius:999px; background:#f0f0f0; border:1px solid #e0e0e0; color:#888; }
 
   .events-wrap {
     background:#f9f9f9; border:1px solid #e8e8e8; border-radius:0 0 10px 10px;
     flex:1; overflow:hidden; display:flex; flex-direction:column;
   }
-  .events {
-    display:flex; flex-direction:column; flex:1; overflow-y:auto;
-    padding:6px; gap:5px;
-  }
+  .events { display:flex; flex-direction:column; flex:1; overflow-y:auto; padding:6px; gap:5px; }
   .events::-webkit-scrollbar { width:3px; }
   .events::-webkit-scrollbar-thumb { background:#ddd; border-radius:99px; }
 
@@ -64,11 +53,7 @@
   .card:hover { box-shadow:0 2px 8px rgba(0,0,0,.06); border-color:#d8d8d8; }
   .card-top { display:flex; align-items:center; gap:10px; padding:10px 12px; }
 
-  .cat-icon {
-    width:28px; height:28px; border-radius:8px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:13px; flex-shrink:0;
-  }
+  .cat-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
   .ci-rbi{background:#fef3e2;} .ci-fo{background:#ede9fe;}
   .ci-budget{background:#dcfce7;} .ci-earnings{background:#dbeafe;}
   .ci-global{background:#fce7f3;} .ci-data{background:#ffedd5;}
@@ -78,25 +63,14 @@
   .card-title { font-size:12px; font-weight:500; color:#111; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .card-sub { display:flex; align-items:center; gap:5px; margin-top:3px; }
   .card-date { font-size:10px; color:#888; font-family:'DM Mono',monospace; }
+  .today-dot { width:5px; height:5px; border-radius:50%; background:#e24b4a; flex-shrink:0; animation:blink .9s ease-in-out infinite; }
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
 
   .cat-pill { font-size:9px; font-weight:500; padding:1px 6px; border-radius:999px; }
   .cp-rbi{background:#fef3e2;color:#92400e;} .cp-fo{background:#ede9fe;color:#4c1d95;}
   .cp-budget{background:#dcfce7;color:#14532d;} .cp-earnings{background:#dbeafe;color:#1e3a8a;}
   .cp-global{background:#fce7f3;color:#831843;} .cp-data{background:#ffedd5;color:#7c2d12;}
   .cp-other{background:#f3f4f6;color:#374151;}
-
-  .state-box {
-    padding:36px 20px; text-align:center; background:#f9f9f9;
-    border:1px solid #e8e8e8; border-radius:0 0 10px 10px; flex:1;
-  }
-  .state-icon{font-size:26px;margin-bottom:10px;}
-  .state-title{font-size:13px;font-weight:500;color:#111;margin-bottom:4px;}
-  .state-sub{font-size:11px;color:#888;line-height:1.6;}
-  .dots{display:flex;justify-content:center;gap:5px;margin-top:10px;}
-  .dots span{width:5px;height:5px;border-radius:50%;background:#ccc;animation:dp 1.2s ease-in-out infinite;}
-  .dots span:nth-child(2){animation-delay:.2s;}
-  .dots span:nth-child(3){animation-delay:.4s;}
-  @keyframes dp{0%,100%{opacity:.2;transform:scale(.7);}50%{opacity:1;transform:scale(1);}}
 </style>
 </head>
 <body>
@@ -107,42 +81,97 @@
       <div class="hdr-title">Market Events</div>
     </div>
     <div class="hdr-right">
-      <div class="stale-badge" id="staleBadge">cached</div>
-      <div class="refresh-cd" id="refreshCd"></div>
+      <div class="data-badge">no API · offline</div>
     </div>
   </div>
-  <div class="meta" id="metaRow" style="display:none;">
+  <div class="meta">
     <div class="meta-txt" id="metaDate">—</div>
-    <div class="model-badge" id="modelUsed">Gemini</div>
+    <div class="meta-right" id="evCount">—</div>
   </div>
   <div id="content" style="flex:1;display:flex;flex-direction:column;">
-    <div class="state-box">
-      <div class="state-icon">⏳</div>
-      <div class="state-title">Loading events…</div>
-      <div class="dots"><span></span><span></span><span></span></div>
-    </div>
+    <div class="events-wrap"><div class="events" id="evList"></div></div>
   </div>
 </div>
 <script>
-const BASE_URL   = '';
-const MODELS_EP  = BASE_URL + '/api/gemini-models';
-const CONTENT_EP = BASE_URL + '/api/gemini';
-const CACHE_KEY  = 'mkt_v9_day';
+// ─────────────────────────────────────────────────────────────────
+//  STATIC EVENT DATABASE  — no API calls, no quota, always works
+//  Update this list every quarter (copy-paste new dates below)
+// ─────────────────────────────────────────────────────────────────
+const EVENTS = [
+  // ── F&O Weekly Expiries (every Thursday) ──────────────────────
+  {date:'2026-06-05', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-06-12', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-06-19', title:'NSE Monthly F&O Expiry',         category:'F&O'},
+  {date:'2026-06-26', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-07-03', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-07-10', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-07-17', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-07-23', title:'NSE Monthly F&O Expiry',         category:'F&O'},
+  {date:'2026-07-30', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-08-07', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-08-13', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-08-20', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-08-27', title:'NSE Monthly F&O Expiry',         category:'F&O'},
+  {date:'2026-09-03', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-09-10', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-09-17', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-09-24', title:'NSE Monthly F&O Expiry',         category:'F&O'},
+  {date:'2026-10-01', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-10-08', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-10-15', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-10-22', title:'NSE Monthly F&O Expiry',         category:'F&O'},
+  {date:'2026-10-29', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-11-05', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-11-12', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-11-19', title:'NSE Weekly F&O Expiry',          category:'F&O'},
+  {date:'2026-11-26', title:'NSE Monthly F&O Expiry',         category:'F&O'},
 
-// Refresh once per day at 06:00 IST (00:30 UTC)
-const REFRESH_HOUR_IST = 6;
+  // ── RBI MPC Meetings ──────────────────────────────────────────
+  {date:'2026-06-06', title:'RBI MPC Decision',               category:'RBI'},
+  {date:'2026-08-07', title:'RBI MPC Decision',               category:'RBI'},
+  {date:'2026-10-09', title:'RBI MPC Decision',               category:'RBI'},
+  {date:'2026-12-04', title:'RBI MPC Decision',               category:'RBI'},
 
-// Model preference: put cheaper/higher-quota models FIRST
-const PREFERRED = [
-  'gemini-1.5-flash',        // highest free quota (1500/day)
-  'gemini-2.0-flash-lite',   // 1500/day
-  'gemini-2.0-flash',        // 1500/day
-  'gemini-1.5-pro',
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-2.5-pro',
+  // ── India Macro Data ──────────────────────────────────────────
+  {date:'2026-06-12', title:'India CPI Inflation (May)',      category:'Data'},
+  {date:'2026-06-13', title:'India WPI Inflation (May)',      category:'Data'},
+  {date:'2026-06-30', title:'India GDP Q4 FY26',              category:'Data'},
+  {date:'2026-07-14', title:'India CPI Inflation (Jun)',      category:'Data'},
+  {date:'2026-07-15', title:'India WPI Inflation (Jun)',      category:'Data'},
+  {date:'2026-07-31', title:'India IIP Data (May)',           category:'Data'},
+  {date:'2026-08-13', title:'India CPI Inflation (Jul)',      category:'Data'},
+  {date:'2026-08-14', title:'India WPI Inflation (Jul)',      category:'Data'},
+  {date:'2026-09-12', title:'India CPI Inflation (Aug)',      category:'Data'},
+  {date:'2026-09-15', title:'India WPI Inflation (Aug)',      category:'Data'},
+  {date:'2026-09-30', title:'India GDP Q1 FY27',              category:'Data'},
+  {date:'2026-10-14', title:'India CPI Inflation (Sep)',      category:'Data'},
+  {date:'2026-10-15', title:'India WPI Inflation (Sep)',      category:'Data'},
+  {date:'2026-11-13', title:'India CPI Inflation (Oct)',      category:'Data'},
+  {date:'2026-11-14', title:'India WPI Inflation (Oct)',      category:'Data'},
+
+  // ── US Fed FOMC ───────────────────────────────────────────────
+  {date:'2026-06-18', title:'US Fed FOMC Decision',           category:'Global'},
+  {date:'2026-07-29', title:'US Fed FOMC Decision',           category:'Global'},
+  {date:'2026-09-16', title:'US Fed FOMC Decision',           category:'Global'},
+  {date:'2026-11-04', title:'US Fed FOMC Decision',           category:'Global'},
+  {date:'2026-12-16', title:'US Fed FOMC Decision',           category:'Global'},
+
+  // ── Major Nifty50 Earnings (Q4 FY26 season) ──────────────────
+  {date:'2026-06-05', title:'Infosys Q4 Results',             category:'Earnings'},
+  {date:'2026-06-10', title:'TCS Q4 Results',                 category:'Earnings'},
+  {date:'2026-06-12', title:'Wipro Q4 Results',               category:'Earnings'},
+  {date:'2026-06-18', title:'HDFC Bank Q4 Results',           category:'Earnings'},
+  {date:'2026-06-20', title:'Reliance Industries Q4 Results', category:'Earnings'},
+  {date:'2026-06-23', title:'ICICI Bank Q4 Results',          category:'Earnings'},
+  {date:'2026-06-25', title:'SBI Q4 Results',                 category:'Earnings'},
+  {date:'2026-07-08', title:'HUL Q1 FY27 Results',            category:'Earnings'},
+  {date:'2026-07-15', title:'ITC Q1 FY27 Results',            category:'Earnings'},
+
+  // ── India Budget / Policy ─────────────────────────────────────
+  {date:'2026-07-01', title:'Union Budget FY27 Presentation', category:'Budget'},
 ];
 
+// ─────────────────────────────────────────────────────────────────
 const CAT = {
   'RBI'     :{icon:'🏦',ci:'ci-rbi',     cp:'cp-rbi'},
   'F&O'     :{icon:'📊',ci:'ci-fo',      cp:'cp-fo'},
@@ -153,224 +182,60 @@ const CAT = {
   'Other'   :{icon:'📅',ci:'ci-other',   cp:'cp-other'},
 };
 
-let usedModel = '';
-
-/* ── IST date helpers ────────────────────────────────────────────────────── */
-function nowIST() {
-  // IST = UTC+5:30
-  const now = new Date();
-  return new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-}
-
-/** Returns "YYYY-MM-DD" in IST */
 function todayIST() {
-  return nowIST().toISOString().split('T')[0];
+  const now = new Date();
+  const ist = new Date(now.getTime() + 5.5*60*60*1000);
+  return ist.toISOString().split('T')[0];
 }
 
-/** Next 06:00 IST as UTC epoch ms */
-function next6amIST() {
-  const ist = nowIST();
-  const target = new Date(ist);
-  target.setHours(REFRESH_HOUR_IST, 0, 0, 0);
-  if (ist.getHours() >= REFRESH_HOUR_IST) {
-    target.setDate(target.getDate() + 1);
-  }
-  // Convert back to UTC ms
-  return target.getTime() - (5.5 * 60 * 60 * 1000);
-}
+function render() {
+  const today = todayIST();
+  const upcoming = EVENTS
+    .filter(e => e.date >= today)
+    .sort((a,b) => a.date > b.date ? 1 : -1);
 
-function p2(n){ return String(n).padStart(2,'0'); }
-
-/* ── Header countdown to next 6 AM refresh ──────────────────────────────── */
-setInterval(() => {
-  const rem = next6amIST() - Date.now();
-  const el  = document.getElementById('refreshCd');
-  if (!el) return;
-  if (rem > 0) {
-    const h = Math.floor(rem / 3600000);
-    const m = Math.floor((rem % 3600000) / 60000);
-    const s = Math.floor((rem % 60000) / 1000);
-    el.textContent = '↻ ' + p2(h) + ':' + p2(m) + ':' + p2(s);
-  } else {
-    el.textContent = '';
-  }
-}, 1000);
-
-/* ── Cache: keyed by IST date (one fetch per day) ────────────────────────── */
-function readCache() {
-  try {
-    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-    if (c && c.date === todayIST() && Array.isArray(c.events) && c.events.length) return c;
-  } catch(e) {}
-  return null;
-}
-
-function writeCache(events, model) {
-  try {
-    // Remove old keys
-    localStorage.removeItem(CACHE_KEY);
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ date: todayIST(), events, model, ts: Date.now() }));
-  } catch(e) {}
-}
-
-/* ── Rendering ───────────────────────────────────────────────────────────── */
-function showLoading(msg) {
-  document.getElementById('content').innerHTML =
-    `<div class="state-box"><div class="state-icon">🔍</div><div class="state-title">${msg}</div><div class="dots"><span></span><span></span><span></span></div></div>`;
-}
-
-function showError(msg, staleEvents) {
-  if (staleEvents && staleEvents.length) {
-    // Show stale data with a badge rather than a blank error
-    document.getElementById('staleBadge').style.display = 'block';
-    renderEvents(staleEvents, true);
-    return;
-  }
-  document.getElementById('content').innerHTML =
-    `<div class="state-box"><div class="state-icon">⚠️</div><div class="state-title">Could not load</div><div class="state-sub">${msg}</div></div>`;
-}
-
-function renderEvents(events, stale) {
-  if (!stale) document.getElementById('staleBadge').style.display = 'none';
-
-  const cached = readCache();
-  const ts = cached ? cached.ts : Date.now();
+  // Meta bar
   document.getElementById('metaDate').textContent =
-    'Updated ' + new Date(ts).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) +
-    (stale ? ' (cached)' : '');
-  document.getElementById('metaRow').style.display = 'flex';
-  document.getElementById('modelUsed').textContent = usedModel || 'Gemini';
+    'As of ' + new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('evCount').textContent = upcoming.length + ' events ahead';
 
-  const todayStr = todayIST();
-  const upcoming = events.filter(e => {
-    if (!e.date) return true;
-    return e.date >= todayStr;
-  });
-  if (!upcoming.length) {
-    document.getElementById('content').innerHTML =
-      `<div class="state-box"><div class="state-icon">✅</div><div class="state-title">No upcoming events</div></div>`;
-    return;
-  }
+  const list = document.getElementById('evList');
+  list.innerHTML = '';
 
-  let html = '<div class="events-wrap"><div class="events">';
   for (const ev of upcoming) {
-    const cat = CAT[ev.category] || CAT['Other'];
-    const dl  = ev.date
-      ? new Date(ev.date + 'T00:00:00').toLocaleDateString('en-IN', {day:'numeric', month:'short'})
-      : (ev.dateText || '');
-    html += `<div class="card">
+    const cat    = CAT[ev.category] || CAT['Other'];
+    const isToday = ev.date === today;
+    const dl     = new Date(ev.date+'T00:00:00')
+      .toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
       <div class="card-top">
         <div class="cat-icon ${cat.ci}">${cat.icon}</div>
         <div class="card-info">
           <div class="card-title">${ev.title}</div>
           <div class="card-sub">
-            <span class="card-date">${dl}</span>
+            ${isToday ? '<span class="today-dot"></span>' : ''}
+            <span class="card-date">${isToday ? 'Today' : dl}</span>
             <span class="cat-pill ${cat.cp}">${ev.category}</span>
           </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
+    list.appendChild(card);
   }
-  html += '</div></div>';
-  document.getElementById('content').innerHTML = html;
-}
 
-/* ── API helpers ─────────────────────────────────────────────────────────── */
-function extractEvents(raw) {
-  if (!raw) return null;
-  let t = raw.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
-  // Try JSON first
-  t = t.replace(/```(?:json)?\s*/gi,'').replace(/```\s*/g,'').trim();
-  try { const p=JSON.parse(t); if(Array.isArray(p)&&p.length) return p; } catch(e) {}
-  const s=t.indexOf('['), e=t.lastIndexOf(']');
-  if (s!==-1&&e>s) { try { const p=JSON.parse(t.slice(s,e+1)); if(Array.isArray(p)&&p.length) return p; } catch(e2){} }
-  // Pipe-separated lines
-  const events=[], lines=t.split('\n').map(l=>l.trim()).filter(l=>l&&l.includes('|'));
-  const validCats=['RBI','F&O','Budget','Earnings','Global','Data','Other'];
-  for (const line of lines) {
-    const parts=line.split('|').map(p=>p.trim());
-    if (parts.length>=3) {
-      const [date,title,category]=parts;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        const cat=validCats.find(c=>category.includes(c))||'Other';
-        events.push({title,date,category:cat});
-      }
-    }
-  }
-  return events.length ? events : null;
-}
-
-async function getModel() {
-  const r = await fetch(MODELS_EP);
-  if (!r.ok) throw new Error('API proxy unreachable');
-  const data = await r.json();
-  const avail = (data.models||[])
-    .filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent'))
-    .map(m=>m.name.replace('models/',''));
-  for (const p of PREFERRED) { const f=avail.find(a=>a===p||a.startsWith(p+'-')); if(f) return f; }
-  if (avail.length) return avail[0];
-  throw new Error('No models available');
-}
-
-async function fetchAndRender(staleEvents) {
-  showLoading('Connecting to Gemini…');
-  try {
-    const model = await getModel();
-    usedModel = model;
-    showLoading('Fetching market events…');
-    const today = todayIST();
-    const end   = new Date(today); end.setDate(end.getDate()+45);
-    const endStr = end.toISOString().split('T')[0];
-
-    // Compact prompt = fewer tokens consumed
-    const prompt =
-`Indian market events ${today} to ${endStr}. Output ONLY pipe-separated lines: DATE|TITLE|CATEGORY
-DATE=YYYY-MM-DD, TITLE max 7 words, CATEGORY one of: RBI F&O Budget Earnings Global Data Other
-Include: weekly NSE F&O expiry (every Thu), RBI MPC dates, India CPI/WPI/GDP/IIP releases, major Nifty50 earnings, US Fed FOMC.
-No headers. No explanation.`;
-
-    const r = await fetch(CONTENT_EP, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model, body:{
-        contents:[{parts:[{text:prompt}]}],
-        generationConfig:{ temperature:0, maxOutputTokens:1500 }  // halved — saves tokens
-      }})
-    });
-    if (!r.ok) { const e=await r.json(); throw new Error(e?.error?.message||'HTTP '+r.status); }
-    const data = await r.json();
-    let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    raw = raw.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
-    let events = extractEvents(raw);
-    if (!events || !events.length) throw new Error('No events returned');
-    events.sort((a,b)=>a.date>b.date?1:-1);
-    writeCache(events, model);
-    renderEvents(events, false);
-  } catch(err) {
-    showError(err.message||'Unknown error', staleEvents);
+  if (!upcoming.length) {
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;font-size:12px;">No upcoming events in database</div>';
   }
 }
 
-/* ── Boot + daily scheduler ──────────────────────────────────────────────── */
-function boot() {
-  const cached = readCache();
-  if (cached) {
-    usedModel = cached.model || '';
-    renderEvents(cached.events, false);
-    // Still schedule next-day refresh
-    scheduleNextRefresh(cached.events);
-    return;
-  }
-  fetchAndRender(null);
-}
-
-function scheduleNextRefresh(staleEvents) {
-  const msLeft = next6amIST() - Date.now();
-  setTimeout(() => {
-    fetchAndRender(staleEvents);
-  }, msLeft + 500);
-}
-
-boot();
+render();
+// Re-render at midnight IST to refresh "today" detection
+const now = new Date();
+const ist = new Date(now.getTime() + 5.5*60*60*1000);
+const msTillMidnight = (24*60*60*1000) - (ist.getHours()*3600 + ist.getMinutes()*60 + ist.getSeconds())*1000 + 500;
+setTimeout(() => { render(); setInterval(render, 24*60*60*1000); }, msTillMidnight);
 </script>
 </body>
 </html>
