@@ -25,29 +25,39 @@ async function writeToSheet(events) {
     ...events.map(e => [e.date, e.title, e.category, new Date().toISOString()])
   ];
 
-  // Use batchUpdate to clear and write in one shot — avoids URL encoding issues
-  const batchRes = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchUpdate`,
+  // Step 1: clear all values using sheetId=0 (first sheet)
+  const clearRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,
     {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        valueInputOption: 'RAW',
-        data: [{
-          range: `${SHEET_TAB}!A1`,
-          values: rows
-        }],
-        includeValuesInResponse: false
+        requests: [{
+          updateCells: {
+            range: { sheetId: 0 },
+            fields: 'userEnteredValue'
+          }
+        }]
       })
     }
   );
+  if (!clearRes.ok) {
+    const t = await clearRes.text();
+    throw new Error(`Clear failed (${clearRes.status}): ${t.slice(0,200)}`);
+  }
 
-  if (!batchRes.ok) {
-    const t = await batchRes.text();
-    throw new Error(`Sheet write failed (${batchRes.status}): ${t.slice(0, 300)}`);
+  // Step 2: write rows using A1 notation with sheet index
+  const writeRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/A1?valueInputOption=RAW`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: rows })
+    }
+  );
+  if (!writeRes.ok) {
+    const t = await writeRes.text();
+    throw new Error(`Write failed (${writeRes.status}): ${t.slice(0,200)}`);
   }
 }
 
