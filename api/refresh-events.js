@@ -1,33 +1,17 @@
 // /api/refresh-events.js
-// Vercel Serverless Function + Cron Job
-// Runs once daily at 00:30 UTC (6:00 AM IST)
-// Calls Gemini ONCE → writes results to Google Sheet
-// Widget reads the sheet all day → zero AI tokens per page load
+// Vercel Cron Job — runs daily at 00:30 UTC (6:00 AM IST)
+// Uses Groq (free, fast) → writes to Google Sheet → widget reads sheet
 
-const PREFERRED_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-2.0-flash-lite',
-  'gemini-2.0-flash',
-  'gemini-1.5-pro',
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-flash',
-];
-
-// ── Google Sheets write via REST API ─────────────────────────────────────
+// ── Google Sheets write ───────────────────────────────────────────────────
 async function writeToSheet(events) {
   const SHEET_ID  = process.env.GOOGLE_SHEET_ID;
-  const API_KEY   = process.env.GOOGLE_SERVICE_ACCOUNT_KEY; // base64-encoded service account JSON
+  const API_KEY   = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
   const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || 'Events';
 
-  // Decode service account
-  const serviceAccount = JSON.parse(
-    Buffer.from(API_KEY, 'base64').toString('utf-8')
-  );
-
-  // Get access token using JWT
+  const serviceAccount = JSON.parse(Buffer.from(API_KEY, 'base64').toString('utf-8'));
   const token = await getGoogleAccessToken(serviceAccount);
 
-  // Clear existing data first
+  // Clear sheet
   await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_TAB}!A:D:clear`,
     { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
@@ -43,10 +27,7 @@ async function writeToSheet(events) {
     `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_TAB}!A1?valueInputOption=RAW`,
     {
       method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: rows })
     }
   );
@@ -57,7 +38,7 @@ async function writeToSheet(events) {
   }
 }
 
-// ── Minimal JWT for Google OAuth2 ────────────────────────────────────────
+// ── Google OAuth2 JWT ─────────────────────────────────────────────────────
 async function getGoogleAccessToken(sa) {
   const now   = Math.floor(Date.now() / 1000);
   const claim = {
@@ -68,29 +49,21 @@ async function getGoogleAccessToken(sa) {
     iat: now
   };
 
-  // Build JWT (header.payload.signature)
-  const enc    = s => Buffer.from(JSON.stringify(s)).toString('base64url');
-  const header = enc({ alg: 'RS256', typ: 'JWT' });
-  const payload= enc(claim);
+  const enc     = s => Buffer.from(JSON.stringify(s)).toString('base64url');
+  const header  = enc({ alg: 'RS256', typ: 'JWT' });
+  const payload = enc(claim);
   const unsigned = `${header}.${payload}`;
 
-  // Sign with RS256
-  const keyData = sa.private_key
-    .replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '');
+  const keyData  = sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '');
   const binaryKey = Buffer.from(keyData, 'base64');
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8', binaryKey,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
     false, ['sign']
   );
-  const sig = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    cryptoKey,
-    Buffer.from(unsigned)
-  );
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, Buffer.from(unsigned));
   const jwt = `${unsigned}.${Buffer.from(sig).toString('base64url')}`;
 
-  // Exchange JWT for access token
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -100,63 +73,38 @@ async function getGoogleAccessToken(sa) {
     })
   });
   const tokenData = await tokenRes.json();
-  if (!tokenData.access_token) throw new Error('Failed to get Google token: ' + JSON.stringify(tokenData));
+  if (!tokenData.access_token) throw new Error('Google token failed: ' + JSON.stringify(tokenData));
   return tokenData.access_token;
 }
 
-// ── Gemini helpers ────────────────────────────────────────────────────────
-async function getBestModel(geminiKey) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`
-  );
-  const data  = await res.json();
-  const avail = (data.models || [])
-    .filter(m => (m.supportedGenerationMethods||[]).includes('generateContent'))
-    .map(m => m.name.replace('models/', ''));
-  for (const p of PREFERRED_MODELS) {
-    const found = avail.find(a => a === p || a.startsWith(p + '-'));
-    if (found) return found;
-  }
-  if (avail.length) return avail[0];
-  throw new Error('No Gemini models available');
-}
-
+// ── Parse pipe-delimited response from Groq ───────────────────────────────
 function parseEvents(raw) {
   if (!raw) return null;
-  let t = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
-             .replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
-  // Try JSON
-  try { const p = JSON.parse(t); if (Array.isArray(p) && p.length) return p; } catch(e) {}
-  const s = t.indexOf('['), e = t.lastIndexOf(']');
-  if (s > -1 && e > s) { try { const p = JSON.parse(t.slice(s, e+1)); if (Array.isArray(p) && p.length) return p; } catch(e){} }
-  // Pipe-separated
-  const valid = ['RBI','F&O','Budget','Earnings','Global','Data','Other'];
-  const evs = [];
-  for (const line of t.split('\n').map(l => l.trim()).filter(l => l.includes('|'))) {
-    const [date, title, category] = line.split('|').map(p => p.trim());
-    if (/^\d{4}-\d{2}-\d{2}$/.test(date))
-      evs.push({ date, title, category: valid.find(c => category.includes(c)) || 'Other' });
+  const valid = ['RBI', 'F&O', 'Budget', 'Earnings', 'Global', 'Data', 'Other'];
+  const events = [];
+  for (const line of raw.split('\n').map(l => l.trim()).filter(l => l.includes('|'))) {
+    const parts = line.split('|').map(p => p.trim());
+    if (parts.length >= 3) {
+      const [date, title, category] = parts;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        events.push({ date, title, category: valid.find(c => category.includes(c)) || 'Other' });
+      }
+    }
   }
-  return evs.length ? evs : null;
+  return events.length ? events : null;
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  // No auth check needed — Vercel cron is already protected by Vercel infrastructure
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
 
   try {
-    // 1. Get cheapest available model
-    const model = await getBestModel(geminiKey);
+    const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const today  = istNow.toISOString().split('T')[0];
+    const endDt  = new Date(today); endDt.setDate(endDt.getDate() + 60);
+    const endStr = endDt.toISOString().split('T')[0];
 
-    // 2. Build date range (today IST → +60 days)
-    const istNow  = new Date(Date.now() + 5.5*60*60*1000);
-    const today   = istNow.toISOString().split('T')[0];
-    const endDt   = new Date(today); endDt.setDate(endDt.getDate() + 60);
-    const endStr  = endDt.toISOString().split('T')[0];
-
-    // 3. Call Gemini — compact prompt to minimise tokens
     const prompt =
 `List Indian stock market events from ${today} to ${endStr}.
 Output ONLY pipe-delimited lines: YYYY-MM-DD|Title max 7 words|Category
@@ -164,36 +112,37 @@ Category must be one of: RBI F&O Budget Earnings Global Data Other
 Include: NSE F&O weekly expiry every Thursday, NSE monthly expiry last Thursday of month, RBI MPC decisions, India CPI WPI GDP IIP releases, US Fed FOMC meetings, major Nifty50 earnings.
 No headers. No explanation. No markdown.`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0, maxOutputTokens: 1200 }
-        })
-      }
-    );
+    // Call Groq API (free tier — llama3 model)
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${groqKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0,
+        max_tokens: 1200
+      })
+    });
 
-    if (!geminiRes.ok) {
-      const err = await geminiRes.json();
-      throw new Error('Gemini error: ' + (err?.error?.message || geminiRes.status));
+    if (!groqRes.ok) {
+      const err = await groqRes.json();
+      throw new Error('Groq error: ' + (err?.error?.message || groqRes.status));
     }
 
-    const geminiData = await geminiRes.json();
-    const raw    = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const groqData = await groqRes.json();
+    const raw    = groqData?.choices?.[0]?.message?.content || '';
     const events = parseEvents(raw);
-    if (!events || !events.length) throw new Error('No events parsed from Gemini response');
+    if (!events || !events.length) throw new Error('No events parsed from Groq response');
 
     events.sort((a, b) => a.date > b.date ? 1 : -1);
-
-    // 4. Write to Google Sheet
     await writeToSheet(events);
 
     return res.status(200).json({
       success: true,
-      model,
+      model: 'llama-3.3-70b-versatile',
       count: events.length,
       updatedAt: new Date().toISOString()
     });
