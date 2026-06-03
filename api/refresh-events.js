@@ -2,13 +2,11 @@
 // Vercel Cron Job — runs daily at 00:30 UTC (6:00 AM IST)
 // Uses Groq (free) → writes to Google Sheet → widget reads sheet
 
-// ── Google Sheets write ───────────────────────────────────────────────────
 async function writeToSheet(events) {
   const SHEET_ID  = process.env.GOOGLE_SHEET_ID;
   const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || 'Events';
   const SA_RAW    = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 
-  // Parse service account — handles raw JSON or base64
   let sa;
   try { sa = JSON.parse(SA_RAW); }
   catch(e) {
@@ -20,40 +18,39 @@ async function writeToSheet(events) {
   }
 
   const token = await getGoogleAccessToken(sa);
-  const base  = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
-  const range = encodeURIComponent(`${SHEET_TAB}!A:D`);
 
-  // 1. Clear existing data
-  const clearRes = await fetch(`${base}/values/${range}:clear`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-  });
-  if (!clearRes.ok) {
-    const t = await clearRes.text();
-    throw new Error(`Clear failed (${clearRes.status}): ${t.slice(0,200)}`);
-  }
-
-  // 2. Write header + events
+  // Build rows
   const rows = [
     ['date', 'title', 'category', 'updated'],
     ...events.map(e => [e.date, e.title, e.category, new Date().toISOString()])
   ];
-  const writeRange = encodeURIComponent(`${SHEET_TAB}!A1`);
-  const writeRes = await fetch(
-    `${base}/values/${writeRange}?valueInputOption=RAW`,
+
+  // Use batchUpdate to clear and write in one shot — avoids URL encoding issues
+  const batchRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchUpdate`,
     {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: rows })
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        valueInputOption: 'RAW',
+        data: [{
+          range: `${SHEET_TAB}!A1`,
+          values: rows
+        }],
+        includeValuesInResponse: false
+      })
     }
   );
-  if (!writeRes.ok) {
-    const t = await writeRes.text();
-    throw new Error(`Write failed (${writeRes.status}): ${t.slice(0,200)}`);
+
+  if (!batchRes.ok) {
+    const t = await batchRes.text();
+    throw new Error(`Sheet write failed (${batchRes.status}): ${t.slice(0, 300)}`);
   }
 }
 
-// ── Google OAuth2 JWT ─────────────────────────────────────────────────────
 async function getGoogleAccessToken(sa) {
   const now   = Math.floor(Date.now() / 1000);
   const claim = {
@@ -66,7 +63,7 @@ async function getGoogleAccessToken(sa) {
   const enc      = s => Buffer.from(JSON.stringify(s)).toString('base64url');
   const unsigned = `${enc({ alg:'RS256', typ:'JWT' })}.${enc(claim)}`;
 
-  const keyData  = sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '');
+  const keyData   = sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '');
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8', Buffer.from(keyData, 'base64'),
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
@@ -88,7 +85,6 @@ async function getGoogleAccessToken(sa) {
   return d.access_token;
 }
 
-// ── Parse Groq response ───────────────────────────────────────────────────
 function parseEvents(raw) {
   const valid = ['RBI','F&O','Budget','Earnings','Global','Data','Other'];
   const events = [];
@@ -101,10 +97,9 @@ function parseEvents(raw) {
   return events.length ? events : null;
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   const groqKey = process.env.GROQ_API_KEY;
-  if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY not set in environment variables' });
+  if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
 
   try {
     const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
