@@ -8,7 +8,21 @@ async function writeToSheet(events) {
   const API_KEY   = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
   const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || 'Events';
 
-  const serviceAccount = JSON.parse(Buffer.from(API_KEY, 'base64').toString('utf-8'));
+  // Handle both raw JSON and base64-encoded service account
+  let serviceAccount;
+  try {
+    // Try raw JSON first
+    serviceAccount = JSON.parse(API_KEY);
+  } catch(e) {
+    // Fall back to base64 decode
+    try {
+      serviceAccount = JSON.parse(Buffer.from(API_KEY, 'base64').toString('utf-8'));
+    } catch(e2) {
+      // Try cleaning the base64 string
+      const cleaned = API_KEY.replace(/\s/g, '');
+      serviceAccount = JSON.parse(Buffer.from(cleaned, 'base64').toString('utf-8'));
+    }
+  }
   const token = await getGoogleAccessToken(serviceAccount);
 
   // Clear sheet
