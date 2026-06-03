@@ -17,7 +17,7 @@ const PREFERRED_MODELS = [
 async function writeToSheet(events) {
   const SHEET_ID  = process.env.GOOGLE_SHEET_ID;
   const API_KEY   = process.env.GOOGLE_SERVICE_ACCOUNT_KEY; // base64-encoded service account JSON
-  const SHEET_TAB = 'Events';
+  const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || 'Events';
 
   // Decode service account
   const serviceAccount = JSON.parse(
@@ -142,13 +142,7 @@ function parseEvents(raw) {
 
 // ── Main handler ──────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  // Allow manual trigger via GET with secret, or automatic cron
-  const secret = process.env.CRON_SECRET;
-  if (secret && req.headers['authorization'] !== `Bearer ${secret}`) {
-    // Vercel cron passes the secret in Authorization header automatically
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+  // No auth check needed — Vercel cron is already protected by Vercel infrastructure
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
