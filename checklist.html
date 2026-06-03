@@ -353,6 +353,35 @@ body{
     color:#111;
 }
 
+/* AUTO-SAVE INDICATOR */
+
+.autosave{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    font-size:11px;
+
+    letter-spacing:.08em;
+
+    color:#9ca3af;
+
+    font-weight:600;
+}
+
+.dot{
+
+    width:7px;
+    height:7px;
+
+    border-radius:50%;
+
+    background:#22c55e;
+}
+
 /* SCROLLBAR */
 
 ::-webkit-scrollbar{
@@ -420,6 +449,11 @@ NO ITEMS
 RESET
 </button>
 
+<div class="autosave">
+AUTO-SAVE
+<div class="dot"></div>
+</div>
+
 <button onclick="clearAll()">
 DELETE ALL
 </button>
@@ -429,6 +463,8 @@ DELETE ALL
 </div>
 
 <script>
+
+const STORAGE_KEY = 'trading-checklist-tasks';
 
 const list =
 document.getElementById('list');
@@ -442,58 +478,53 @@ document.getElementById('progress');
 const input =
 document.getElementById('taskInput');
 
-let tasks = [
+/* DEFAULT TASKS — used only on first load */
 
-{
-text:'Check market trend',
-done:false
-},
+const defaultTasks = [];
 
-{
-text:'Risk reward minimum 1:2',
-done:false
-},
+/* LOAD from localStorage, fall back to defaults */
 
-{
-text:'Stop loss placed',
-done:false
-},
+let tasks;
 
-{
-text:'No emotional trades',
-done:false
+const saved = localStorage.getItem(STORAGE_KEY);
+
+if(saved){
+    try{
+        tasks = JSON.parse(saved);
+    } catch(e){
+        tasks = defaultTasks.map(t => ({...t}));
+    }
+} else {
+    tasks = defaultTasks.map(t => ({...t}));
 }
 
-];
+/* SAVE to localStorage */
+
+function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
 
 function render(){
 
-list.innerHTML = '';
+    list.innerHTML = '';
 
-if(tasks.length === 0){
+    if(tasks.length === 0){
+        empty.style.display = 'flex';
+    } else {
+        empty.style.display = 'none';
+    }
 
-empty.style.display = 'flex';
-}
+    let completed = 0;
 
-else{
+    tasks.forEach((task, index) => {
 
-empty.style.display = 'none';
-}
+        if(task.done) completed++;
 
-let completed = 0;
+        const item = document.createElement('div');
 
-tasks.forEach((task,index)=>{
+        item.className = 'item' + (task.done ? ' done' : '');
 
-if(task.done)
-completed++;
-
-const item =
-document.createElement('div');
-
-item.className =
-'item' + (task.done ? ' done' : '');
-
-item.innerHTML = `
+        item.innerHTML = `
 
 <input
 type="checkbox"
@@ -513,98 +544,61 @@ onclick="deleteTask(${index})">
 
 `;
 
-list.appendChild(item);
+        list.appendChild(item);
+    });
 
-});
-
-progress.innerText =
-`${completed} / ${tasks.length}`;
-
+    progress.innerText = `${completed} / ${tasks.length}`;
 }
 
 function addTask(){
 
-const text =
-input.value.trim();
+    const text = input.value.trim();
 
-if(!text)
-return;
+    if(!text) return;
 
-/* SPLIT BY COMMA */
+    /* SPLIT BY COMMA */
 
-const splitTasks =
-text.split(',');
+    const splitTasks = text.split(',');
 
-splitTasks.forEach(t=>{
+    splitTasks.forEach(t => {
+        const clean = t.trim();
+        if(clean){
+            tasks.push({ text: clean, done: false });
+        }
+    });
 
-const clean =
-t.trim();
+    input.value = '';
 
-if(clean){
-
-tasks.push({
-
-text:clean,
-done:false
-
-});
-
-}
-
-});
-
-input.value = '';
-
-render();
-
+    save();
+    render();
 }
 
 function toggleTask(index){
-
-tasks[index].done =
-!tasks[index].done;
-
-render();
-
+    tasks[index].done = !tasks[index].done;
+    save();
+    render();
 }
 
 function deleteTask(index){
-
-tasks.splice(index,1);
-
-render();
-
+    tasks.splice(index, 1);
+    save();
+    render();
 }
 
 function resetAll(){
-
-tasks =
-tasks.map(t=>({
-
-...t,
-done:false
-
-}));
-
-render();
-
+    tasks = tasks.map(t => ({ ...t, done: false }));
+    save();
+    render();
 }
 
 function clearAll(){
-
-tasks = [];
-
-render();
-
+    tasks = [];
+    save();
+    render();
 }
 
-input.addEventListener(
-'keypress',
-e=>{
-
-if(e.key === 'Enter')
-addTask();
-
+input.addEventListener('keypress', e => {
+    if(e.key === 'Enter') addTask();
 });
 
 render();
