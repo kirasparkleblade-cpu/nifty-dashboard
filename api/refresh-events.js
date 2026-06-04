@@ -117,56 +117,52 @@ export default async function handler(req, res) {
     const endDt  = new Date(today); endDt.setDate(endDt.getDate() + 60);
     const endStr = endDt.toISOString().split('T')[0];
 
-    // Known fixed dates — AI only fills gaps, cannot invent new ones
-    const knownEvents = [
-      // F&O Weekly (every Thursday)
-      "2026-06-05|NSE F&O Weekly Expiry|F&O",
-      "2026-06-11|NSE F&O Weekly Expiry|F&O",
-      "2026-06-18|NSE F&O Monthly Expiry|F&O",
-      "2026-06-25|NSE F&O Weekly Expiry|F&O",
-      "2026-07-02|NSE F&O Weekly Expiry|F&O",
-      "2026-07-09|NSE F&O Weekly Expiry|F&O",
-      "2026-07-16|NSE F&O Weekly Expiry|F&O",
-      "2026-07-23|NSE F&O Monthly Expiry|F&O",
-      "2026-07-30|NSE F&O Weekly Expiry|F&O",
-      "2026-08-06|NSE F&O Weekly Expiry|F&O",
-      "2026-08-13|NSE F&O Weekly Expiry|F&O",
-      "2026-08-20|NSE F&O Weekly Expiry|F&O",
-      "2026-08-27|NSE F&O Monthly Expiry|F&O",
-      "2026-09-03|NSE F&O Weekly Expiry|F&O",
-      "2026-09-10|NSE F&O Weekly Expiry|F&O",
-      "2026-09-17|NSE F&O Weekly Expiry|F&O",
-      "2026-09-24|NSE F&O Monthly Expiry|F&O",
-      // RBI MPC (confirmed dates)
-      "2026-06-06|RBI MPC Decision|RBI",
-      "2026-08-07|RBI MPC Decision|RBI",
-      "2026-10-09|RBI MPC Decision|RBI",
-      "2026-12-04|RBI MPC Decision|RBI",
-      // US Fed FOMC (confirmed dates)
-      "2026-06-18|US Fed FOMC Decision|Global",
-      "2026-07-29|US Fed FOMC Decision|Global",
-      "2026-09-16|US Fed FOMC Decision|Global",
-      "2026-11-04|US Fed FOMC Decision|Global",
-      "2026-12-16|US Fed FOMC Decision|Global",
-      // India Macro Data (approx release dates)
-      "2026-06-12|India CPI Inflation May|Data",
-      "2026-06-12|India WPI Inflation May|Data",
-      "2026-06-30|India GDP Q4 FY26|Data",
-      "2026-07-14|India CPI Inflation Jun|Data",
-      "2026-07-31|India IIP Data May|Data",
-      "2026-08-13|India CPI Inflation Jul|Data",
-      "2026-09-12|India CPI Inflation Aug|Data",
-    ].filter(e => e.split("|")[0] >= today && e.split("|")[0] <= endStr).join("\n");
+    // ── Step 1: Generate rule-based events (zero hallucination) ──────────
+    // These are computed mathematically — no AI needed, always correct
+    const ruleEvents = [];
 
+    // Every Thursday = NSE F&O Weekly Expiry
+    // Last Thursday of month = Monthly Expiry instead
+    const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
+    const toISO   = d => d.toISOString().split('T')[0];
+    const lastThursdayOfMonth = (y, m) => {
+      const d = new Date(y, m+1, 0); // last day of month
+      d.setDate(d.getDate() - ((d.getDay()+3)%7)); // back to Thursday
+      return d;
+    };
+
+    // Find first Thursday on or after today
+    const startDt = new Date(today);
+    const dow = startDt.getDay(); // 0=Sun,4=Thu
+    const daysToThur = (4 - dow + 7) % 7;
+    let cursor = addDays(startDt, daysToThur);
+    const endDt2 = new Date(endStr);
+
+    while (cursor <= endDt2) {
+      const y = cursor.getFullYear(), m = cursor.getMonth();
+      const lastThur = lastThursdayOfMonth(y, m);
+      const isMonthly = toISO(cursor) === toISO(lastThur);
+      ruleEvents.push({
+        date: toISO(cursor),
+        title: isMonthly ? 'NSE F&O Monthly Expiry' : 'NSE F&O Weekly Expiry',
+        category: 'F&O'
+      });
+      cursor = addDays(cursor, 7);
+    }
+
+    // ── Step 2: Ask AI only for events it CANNOT hallucinate dates for ────
+    // RBI MPC, FOMC, Earnings — AI knows these from training, but we
+    // instruct it to only output dates it is 100% certain about.
     const prompt =
-`Here are confirmed Indian market events from ${today} to ${endStr}:
-${knownEvents}
-
-Now add ONLY real confirmed events not already listed above — such as verified Nifty50 Q1 earnings dates (TCS, Infosys, HDFC Bank, Reliance etc) if you know their exact confirmed date.
-DO NOT invent or guess dates. Only include events you are certain about.
-Output ONLY pipe-delimited lines in same format: YYYY-MM-DD|Title max 7 words|Category
-Category must be one of: RBI F&O Budget Earnings Global Data Other
-No headers. No explanation. No markdown. If unsure about any date, skip it.`;
+`Today is ${today}. List ONLY confirmed Indian market events from ${today} to ${endStr} that you are 100% certain about.
+STRICT RULES:
+- Only include events with exact confirmed dates (not approximate)
+- Do NOT include NSE F&O expiry dates (already handled)
+- Only include: RBI MPC decisions, US Fed FOMC decisions, India CPI/WPI/GDP/IIP data releases, confirmed Nifty50 earnings dates
+- If you are not 100% sure of the exact date, SKIP that event entirely
+- Output ONLY pipe-delimited lines: YYYY-MM-DD|Title max 7 words|Category
+- Category must be one of: RBI F&O Budget Earnings Global Data Other
+- No headers. No explanation. No markdown.`;
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -187,15 +183,12 @@ No headers. No explanation. No markdown. If unsure about any date, skip it.`;
     const groqData = await groqRes.json();
     const raw = groqData?.choices?.[0]?.message?.content || '';
 
-    // Parse known seed events
-    const seedEvents = parseEvents(knownEvents);
-
-    // Parse AI additions (may be empty if AI found nothing new)
+    // Parse AI additions (RBI, FOMC, Earnings, Data releases)
     const aiEvents = parseEvents(raw) || [];
 
-    // Merge — known events take priority, AI can only add new ones
-    const seen = new Set(seedEvents.map(e => e.date + e.title.toLowerCase()));
-    const merged = [...seedEvents];
+    // Merge rule-based (F&O) + AI (everything else) — deduplicated
+    const seen = new Set(ruleEvents.map(e => e.date + e.title.toLowerCase()));
+    const merged = [...ruleEvents];
     for (const e of aiEvents) {
       const key = e.date + e.title.toLowerCase();
       if (!seen.has(key)) { merged.push(e); seen.add(key); }
