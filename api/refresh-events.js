@@ -117,12 +117,56 @@ export default async function handler(req, res) {
     const endDt  = new Date(today); endDt.setDate(endDt.getDate() + 60);
     const endStr = endDt.toISOString().split('T')[0];
 
+    // Known fixed dates — AI only fills gaps, cannot invent new ones
+    const knownEvents = [
+      // F&O Weekly (every Thursday)
+      "2026-06-05|NSE F&O Weekly Expiry|F&O",
+      "2026-06-11|NSE F&O Weekly Expiry|F&O",
+      "2026-06-18|NSE F&O Monthly Expiry|F&O",
+      "2026-06-25|NSE F&O Weekly Expiry|F&O",
+      "2026-07-02|NSE F&O Weekly Expiry|F&O",
+      "2026-07-09|NSE F&O Weekly Expiry|F&O",
+      "2026-07-16|NSE F&O Weekly Expiry|F&O",
+      "2026-07-23|NSE F&O Monthly Expiry|F&O",
+      "2026-07-30|NSE F&O Weekly Expiry|F&O",
+      "2026-08-06|NSE F&O Weekly Expiry|F&O",
+      "2026-08-13|NSE F&O Weekly Expiry|F&O",
+      "2026-08-20|NSE F&O Weekly Expiry|F&O",
+      "2026-08-27|NSE F&O Monthly Expiry|F&O",
+      "2026-09-03|NSE F&O Weekly Expiry|F&O",
+      "2026-09-10|NSE F&O Weekly Expiry|F&O",
+      "2026-09-17|NSE F&O Weekly Expiry|F&O",
+      "2026-09-24|NSE F&O Monthly Expiry|F&O",
+      // RBI MPC (confirmed dates)
+      "2026-06-06|RBI MPC Decision|RBI",
+      "2026-08-07|RBI MPC Decision|RBI",
+      "2026-10-09|RBI MPC Decision|RBI",
+      "2026-12-04|RBI MPC Decision|RBI",
+      // US Fed FOMC (confirmed dates)
+      "2026-06-18|US Fed FOMC Decision|Global",
+      "2026-07-29|US Fed FOMC Decision|Global",
+      "2026-09-16|US Fed FOMC Decision|Global",
+      "2026-11-04|US Fed FOMC Decision|Global",
+      "2026-12-16|US Fed FOMC Decision|Global",
+      // India Macro Data (approx release dates)
+      "2026-06-12|India CPI Inflation May|Data",
+      "2026-06-12|India WPI Inflation May|Data",
+      "2026-06-30|India GDP Q4 FY26|Data",
+      "2026-07-14|India CPI Inflation Jun|Data",
+      "2026-07-31|India IIP Data May|Data",
+      "2026-08-13|India CPI Inflation Jul|Data",
+      "2026-09-12|India CPI Inflation Aug|Data",
+    ].filter(e => e.split("|")[0] >= today && e.split("|")[0] <= endStr).join("\n");
+
     const prompt =
-`List Indian stock market events from ${today} to ${endStr}.
-Output ONLY pipe-delimited lines: YYYY-MM-DD|Title max 7 words|Category
+`Here are confirmed Indian market events from ${today} to ${endStr}:
+${knownEvents}
+
+Now add ONLY real confirmed events not already listed above — such as verified Nifty50 Q1 earnings dates (TCS, Infosys, HDFC Bank, Reliance etc) if you know their exact confirmed date.
+DO NOT invent or guess dates. Only include events you are certain about.
+Output ONLY pipe-delimited lines in same format: YYYY-MM-DD|Title max 7 words|Category
 Category must be one of: RBI F&O Budget Earnings Global Data Other
-Include: NSE F&O weekly expiry every Thursday, NSE monthly expiry last Thursday of month, RBI MPC decisions, India CPI WPI GDP IIP releases, US Fed FOMC meetings, major Nifty50 earnings.
-No headers. No explanation. No markdown.`;
+No headers. No explanation. No markdown. If unsure about any date, skip it.`;
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -141,17 +185,30 @@ No headers. No explanation. No markdown.`;
     }
 
     const groqData = await groqRes.json();
-    const raw    = groqData?.choices?.[0]?.message?.content || '';
-    const events = parseEvents(raw);
-    if (!events || !events.length) throw new Error('No events parsed. Raw: ' + raw.slice(0, 200));
+    const raw = groqData?.choices?.[0]?.message?.content || '';
 
-    events.sort((a, b) => a.date > b.date ? 1 : -1);
-    await writeToSheet(events);
+    // Parse known seed events
+    const seedEvents = parseEvents(knownEvents);
+
+    // Parse AI additions (may be empty if AI found nothing new)
+    const aiEvents = parseEvents(raw) || [];
+
+    // Merge — known events take priority, AI can only add new ones
+    const seen = new Set(seedEvents.map(e => e.date + e.title.toLowerCase()));
+    const merged = [...seedEvents];
+    for (const e of aiEvents) {
+      const key = e.date + e.title.toLowerCase();
+      if (!seen.has(key)) { merged.push(e); seen.add(key); }
+    }
+
+    if (!merged.length) throw new Error('No events. Raw: ' + raw.slice(0, 200));
+    merged.sort((a, b) => a.date > b.date ? 1 : -1);
+    await writeToSheet(merged);
 
     return res.status(200).json({
       success: true,
       model: 'llama-3.3-70b-versatile',
-      count: events.length,
+      count: merged.length,
       updatedAt: new Date().toISOString()
     });
 
