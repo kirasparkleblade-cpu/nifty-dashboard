@@ -108,8 +108,8 @@ function parseEvents(raw) {
 }
 
 export default async function handler(req, res) {
-  const groqKey = process.env.GROQ_API_KEY;
-  if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
+  const claudeKey = process.env.DEEPSEEK_API_KEY;
+  if (!claudeKey) return res.status(500).json({ error: 'DEEPSEEK_API_KEY not set' });
 
   try {
     const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
@@ -164,24 +164,27 @@ STRICT RULES:
 - Category must be one of: RBI F&O Budget Earnings Global Data Other
 - No headers. No explanation. No markdown.`;
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${claudeKey}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'deepseek-chat',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0,
         max_tokens: 1200
       })
     });
 
-    if (!groqRes.ok) {
-      const err = await groqRes.json();
-      throw new Error('Groq error: ' + (err?.error?.message || groqRes.status));
+    if (!dsRes.ok) {
+      const err = await dsRes.json();
+      throw new Error('DeepSeek error: ' + (err?.error?.message || dsRes.status));
     }
 
-    const groqData = await groqRes.json();
-    const raw = groqData?.choices?.[0]?.message?.content || '';
+    const dsData = await dsRes.json();
+    const raw = dsData?.choices?.[0]?.message?.content || '';
 
     // Parse AI additions (RBI, FOMC, Earnings, Data releases)
     const aiEvents = parseEvents(raw) || [];
@@ -200,7 +203,7 @@ STRICT RULES:
 
     return res.status(200).json({
       success: true,
-      model: 'llama-3.3-70b-versatile',
+      model: 'deepseek-chat',
       count: merged.length,
       updatedAt: new Date().toISOString()
     });
