@@ -108,8 +108,8 @@ function parseEvents(raw) {
 }
 
 export default async function handler(req, res) {
-  const claudeKey = process.env.DEEPSEEK_API_KEY;
-  if (!claudeKey) return res.status(500).json({ error: 'DEEPSEEK_API_KEY not set' });
+  const claudeKey = process.env.GEMINI_API_KEY;
+  if (!claudeKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
   try {
     const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
@@ -164,27 +164,50 @@ STRICT RULES:
 - Category must be one of: RBI F&O Budget Earnings Global Data Other
 - No headers. No explanation. No markdown.`;
 
-    const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${claudeKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0,
-        max_tokens: 1200
-      })
-    });
+    // Try models cheapest first (highest free quota)
+    const MODELS = [
+      'gemini-1.5-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-1.5-pro',
+      'gemini-2.5-flash',
+    ];
 
-    if (!dsRes.ok) {
-      const err = await dsRes.json();
-      throw new Error('DeepSeek error: ' + (err?.error?.message || dsRes.status));
+    // Get available models
+    const modelsRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${claudeKey}`
+    );
+    const modelsData = await modelsRes.json();
+    const available = (modelsData.models||[])
+      .filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent'))
+      .map(m=>m.name.replace('models/',''));
+    let model = null;
+    for (const p of MODELS) {
+      const f = available.find(a => a === p || a.startsWith(p+'-'));
+      if (f) { model = f; break; }
+    }
+    if (!model && available.length) model = available[0];
+    if (!model) throw new Error('No Gemini models available');
+
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${claudeKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0, maxOutputTokens: 1200 }
+        })
+      }
+    );
+
+    if (!geminiRes.ok) {
+      const err = await geminiRes.json();
+      throw new Error('Gemini error: ' + (err?.error?.message || geminiRes.status));
     }
 
-    const dsData = await dsRes.json();
-    const raw = dsData?.choices?.[0]?.message?.content || '';
+    const geminiData = await geminiRes.json();
+    const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     // Parse AI additions (RBI, FOMC, Earnings, Data releases)
     const aiEvents = parseEvents(raw) || [];
@@ -203,7 +226,7 @@ STRICT RULES:
 
     return res.status(200).json({
       success: true,
-      model: 'deepseek-chat',
+      model: model,
       count: merged.length,
       updatedAt: new Date().toISOString()
     });
