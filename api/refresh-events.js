@@ -129,7 +129,7 @@ export default async function handler(req, res) {
     else if (dow === 4) cursor = startDt;
     else cursor = addDays(startDt, 4 - dow);
 
-    const endDt = addDays(startDt, 14); // 2 weeks ahead
+    const endDt = addDays(startDt, 30); // 30 days ahead
     while (cursor <= endDt) {
       const y = cursor.getFullYear(), m = cursor.getMonth();
       const lastThur = lastThursdayOfMonth(y, m);
@@ -144,7 +144,7 @@ export default async function handler(req, res) {
 
     // ── Step 2: Ask Gemini ONLY for this week's non-F&O events ─────────
     // Very short prompt = very few tokens = quota safe
-    const endStr = toISO(addDays(startDt, 7)); // just 7 days
+    const endStr = toISO(addDays(startDt, 30)); // 30 days ahead
 
     const prompt =
 `List confirmed Indian market events from ${today} to ${endStr}.
@@ -164,7 +164,7 @@ No headers. No explanation.`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0, maxOutputTokens: 300 } // tiny — saves tokens
+          generationConfig: { temperature: 0, maxOutputTokens: 600 }
         })
       }
     );
