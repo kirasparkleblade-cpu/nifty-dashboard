@@ -129,7 +129,7 @@ export default async function handler(req, res) {
     else if (dow === 4) cursor = startDt;
     else cursor = addDays(startDt, 4 - dow);
 
-    const endDt = addDays(startDt, 30); // 30 days ahead
+    const endDt = addDays(startDt, 60); // 60 days ahead
     while (cursor <= endDt) {
       const y = cursor.getFullYear(), m = cursor.getMonth();
       const lastThur = lastThursdayOfMonth(y, m);
@@ -144,16 +144,27 @@ export default async function handler(req, res) {
 
     // ── Step 2: Ask Gemini ONLY for this week's non-F&O events ─────────
     // Very short prompt = very few tokens = quota safe
-    const endStr = toISO(addDays(startDt, 30)); // 30 days ahead
+    const endStr = toISO(addDays(startDt, 60)); // 60 days ahead
 
     const prompt =
-`List confirmed Indian market events from ${today} to ${endStr}.
-Output ONLY pipe-delimited lines: YYYY-MM-DD|Title max 6 words|Category
-Category: RBI Budget Earnings Global Data Other
-Include ONLY: RBI MPC decisions, US Fed FOMC, India CPI/WPI/GDP/IIP releases, confirmed Nifty50 earnings.
+`You are an Indian stock market calendar assistant. List all important market events from ${today} to ${endStr}.
+
+Output ONLY pipe-delimited lines, one per line: YYYY-MM-DD|Event Title|Category
+
+Categories to use: RBI, Global, Data, Earnings, Budget, Other
+
+Include ALL of these if they fall in the date range:
+- RBI Monetary Policy Committee (MPC) meetings and decisions
+- US Federal Reserve (Fed) FOMC meetings
+- India CPI inflation data release
+- India WPI inflation data release  
+- India GDP data release
+- India IIP (Index of Industrial Production) data
+- Major Nifty50 company quarterly earnings (TCS, Infosys, HDFC Bank, Reliance, ICICI Bank, SBI, Wipro, HUL, ITC, Bajaj Finance etc)
+- Union Budget if applicable
+
 Do NOT include F&O expiry dates.
-Only include events you are 100% certain about. Skip if unsure.
-No headers. No explanation.`;
+Output ONLY the pipe-delimited lines. No headers. No explanation. No markdown.`;
 
     // Use cheapest model
     const model = 'gemini-1.5-flash';
@@ -164,7 +175,7 @@ No headers. No explanation.`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0, maxOutputTokens: 600 }
+          generationConfig: { temperature: 0, maxOutputTokens: 1200 }
         })
       }
     );
