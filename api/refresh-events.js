@@ -1,6 +1,7 @@
 // /api/refresh-events.js
-// Vercel Cron Job — runs daily at 00:30 UTC (6:00 AM IST)
-// Uses Groq (free) → writes to Google Sheet → widget reads sheet
+// Runs ONCE A WEEK — Monday 00:30 UTC (6:00 AM IST)
+// Calls Gemini for the week's events → writes to Google Sheet
+// Only ~4 calls/month — well within gemini-1.5-flash free tier (1500/day)
 
 async function writeToSheet(events) {
   const SHEET_ID  = process.env.GOOGLE_SHEET_ID;
@@ -19,25 +20,19 @@ async function writeToSheet(events) {
 
   const token = await getGoogleAccessToken(sa);
 
-  // Build rows
   const rows = [
     ['date', 'title', 'category', 'updated'],
     ...events.map(e => [e.date, e.title, e.category, new Date().toISOString()])
   ];
 
-  // Step 1: clear all values using sheetId=0 (first sheet)
+  // Clear sheet
   const clearRes = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        requests: [{
-          updateCells: {
-            range: { sheetId: 0 },
-            fields: 'userEnteredValue'
-          }
-        }]
+        requests: [{ updateCells: { range: { sheetId: 0 }, fields: 'userEnteredValue' } }]
       })
     }
   );
@@ -46,7 +41,7 @@ async function writeToSheet(events) {
     throw new Error(`Clear failed (${clearRes.status}): ${t.slice(0,200)}`);
   }
 
-  // Step 2: write rows using A1 notation with sheet index
+  // Write rows
   const writeRes = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/A1?valueInputOption=RAW`,
     {
@@ -72,8 +67,7 @@ async function getGoogleAccessToken(sa) {
   };
   const enc      = s => Buffer.from(JSON.stringify(s)).toString('base64url');
   const unsigned = `${enc({ alg:'RS256', typ:'JWT' })}.${enc(claim)}`;
-
-  const keyData   = sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '');
+  const keyData  = sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '');
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8', Buffer.from(keyData, 'base64'),
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
@@ -81,7 +75,6 @@ async function getGoogleAccessToken(sa) {
   );
   const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, Buffer.from(unsigned));
   const jwt = `${unsigned}.${Buffer.from(sig).toString('base64url')}`;
-
   const r = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -98,7 +91,7 @@ async function getGoogleAccessToken(sa) {
 function parseEvents(raw) {
   const valid = ['RBI','F&O','Budget','Earnings','Global','Data','Other'];
   const events = [];
-  for (const line of raw.split('\n').map(l => l.trim()).filter(l => l.includes('|'))) {
+  for (const line of (raw||'').split('\n').map(l => l.trim()).filter(l => l.includes('|'))) {
     const [date, title, category] = line.split('|').map(p => p.trim());
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date) && title) {
       events.push({ date, title, category: valid.find(c => (category||'').includes(c)) || 'Other' });
@@ -108,37 +101,36 @@ function parseEvents(raw) {
 }
 
 export default async function handler(req, res) {
-  const claudeKey = process.env.GEMINI_API_KEY;
-  if (!claudeKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
   try {
     const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
     const today  = istNow.toISOString().split('T')[0];
-    const endDt  = new Date(today); endDt.setDate(endDt.getDate() + 60);
-    const endStr = endDt.toISOString().split('T')[0];
 
-    // ── Step 1: Generate rule-based events (zero hallucination) ──────────
-    // These are computed mathematically — no AI needed, always correct
+    // ── Step 1: Compute this week's F&O expiry mathematically ──────────
+    // Every Thursday = weekly expiry, last Thursday of month = monthly
     const ruleEvents = [];
-
-    // Every Thursday = NSE F&O Weekly Expiry
-    // Last Thursday of month = Monthly Expiry instead
     const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
     const toISO   = d => d.toISOString().split('T')[0];
     const lastThursdayOfMonth = (y, m) => {
-      const d = new Date(y, m+1, 0); // last day of month
-      d.setDate(d.getDate() - ((d.getDay()+3)%7)); // back to Thursday
+      const d = new Date(y, m+1, 0);
+      d.setDate(d.getDate() - ((d.getDay()+3)%7));
       return d;
     };
 
-    // Find first Thursday on or after today
+    // Next 14 days of Thursdays (covers this week + next)
     const startDt = new Date(today);
-    const dow = startDt.getDay(); // 0=Sun,4=Thu
-    const daysToThur = (4 - dow + 7) % 7;
-    let cursor = addDays(startDt, daysToThur);
-    const endDt2 = new Date(endStr);
+    const dow = startDt.getDay();
+    const daysToThur = (4 - dow + 7) % 7 || 7;
+    let cursor = addDays(startDt, daysToThur === 7 ? 0 : daysToThur);
+    // Go back to find any Thursday this week too
+    if (dow > 4) cursor = addDays(startDt, 7 - dow + 4);
+    else if (dow === 4) cursor = startDt;
+    else cursor = addDays(startDt, 4 - dow);
 
-    while (cursor <= endDt2) {
+    const endDt = addDays(startDt, 14); // 2 weeks ahead
+    while (cursor <= endDt) {
       const y = cursor.getFullYear(), m = cursor.getMonth();
       const lastThur = lastThursdayOfMonth(y, m);
       const isMonthly = toISO(cursor) === toISO(lastThur);
@@ -150,69 +142,42 @@ export default async function handler(req, res) {
       cursor = addDays(cursor, 7);
     }
 
-    // ── Step 2: Ask AI only for events it CANNOT hallucinate dates for ────
-    // RBI MPC, FOMC, Earnings — AI knows these from training, but we
-    // instruct it to only output dates it is 100% certain about.
+    // ── Step 2: Ask Gemini ONLY for this week's non-F&O events ─────────
+    // Very short prompt = very few tokens = quota safe
+    const endStr = toISO(addDays(startDt, 7)); // just 7 days
+
     const prompt =
-`Today is ${today}. List ONLY confirmed Indian market events from ${today} to ${endStr} that you are 100% certain about.
-STRICT RULES:
-- Only include events with exact confirmed dates (not approximate)
-- Do NOT include NSE F&O expiry dates (already handled)
-- Only include: RBI MPC decisions, US Fed FOMC decisions, India CPI/WPI/GDP/IIP data releases, confirmed Nifty50 earnings dates
-- If you are not 100% sure of the exact date, SKIP that event entirely
-- Output ONLY pipe-delimited lines: YYYY-MM-DD|Title max 7 words|Category
-- Category must be one of: RBI F&O Budget Earnings Global Data Other
-- No headers. No explanation. No markdown.`;
+`List confirmed Indian market events from ${today} to ${endStr}.
+Output ONLY pipe-delimited lines: YYYY-MM-DD|Title max 6 words|Category
+Category: RBI Budget Earnings Global Data Other
+Include ONLY: RBI MPC decisions, US Fed FOMC, India CPI/WPI/GDP/IIP releases, confirmed Nifty50 earnings.
+Do NOT include F&O expiry dates.
+Only include events you are 100% certain about. Skip if unsure.
+No headers. No explanation.`;
 
-    // Try models cheapest first (highest free quota)
-    const MODELS = [
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-2.0-flash',
-      'gemini-1.5-pro',
-      'gemini-2.5-flash',
-    ];
-
-    // Get available models
-    const modelsRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${claudeKey}`
-    );
-    const modelsData = await modelsRes.json();
-    const available = (modelsData.models||[])
-      .filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent'))
-      .map(m=>m.name.replace('models/',''));
-    let model = null;
-    for (const p of MODELS) {
-      const f = available.find(a => a === p || a.startsWith(p+'-'));
-      if (f) { model = f; break; }
-    }
-    if (!model && available.length) model = available[0];
-    if (!model) throw new Error('No Gemini models available');
-
+    // Use cheapest model
+    const model = 'gemini-1.5-flash';
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${claudeKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0, maxOutputTokens: 1200 }
+          generationConfig: { temperature: 0, maxOutputTokens: 300 } // tiny — saves tokens
         })
       }
     );
 
-    if (!geminiRes.ok) {
-      const err = await geminiRes.json();
-      throw new Error('Gemini error: ' + (err?.error?.message || geminiRes.status));
+    let aiEvents = [];
+    if (geminiRes.ok) {
+      const geminiData = await geminiRes.json();
+      const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      aiEvents = parseEvents(raw) || [];
     }
+    // If Gemini fails quota — no problem, F&O events still show from math
 
-    const geminiData = await geminiRes.json();
-    const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    // Parse AI additions (RBI, FOMC, Earnings, Data releases)
-    const aiEvents = parseEvents(raw) || [];
-
-    // Merge rule-based (F&O) + AI (everything else) — deduplicated
+    // ── Step 3: Merge F&O (math) + AI events ───────────────────────────
     const seen = new Set(ruleEvents.map(e => e.date + e.title.toLowerCase()));
     const merged = [...ruleEvents];
     for (const e of aiEvents) {
@@ -220,14 +185,15 @@ STRICT RULES:
       if (!seen.has(key)) { merged.push(e); seen.add(key); }
     }
 
-    if (!merged.length) throw new Error('No events. Raw: ' + raw.slice(0, 200));
     merged.sort((a, b) => a.date > b.date ? 1 : -1);
     await writeToSheet(merged);
 
     return res.status(200).json({
       success: true,
-      model: model,
-      count: merged.length,
+      model,
+      fo_count: ruleEvents.length,
+      ai_count: aiEvents.length,
+      total: merged.length,
       updatedAt: new Date().toISOString()
     });
 
