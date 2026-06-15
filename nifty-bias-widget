@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIFTY 50 Bias</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --card:#ffffff;
+    --card2:#f7f6f3;
+    --border:#e9e8e4;
+    --text:#37352f;
+    --muted:#9b9a97;
+    --green:#0f7b3a;
+    --green-bg:#ddf3e4;
+    --red:#a82e23;
+    --red-bg:#fbe4e1;
+    --amber:#9a6700;
+    --amber-bg:#fbecdc;
+    --blue:#1a6cb0;
+    --purple:#6940a5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:16px;
+    line-height:1.5;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+
+  .hidden{display:none;}
+
+  /* paste box, collapsible */
+  details{
+    border:1px solid var(--border);
+    border-radius:10px;
+    margin-bottom:16px;
+    background:var(--card2);
+  }
+  summary{
+    padding:10px 14px;
+    font-size:13px;
+    font-weight:500;
+    color:var(--text);
+    cursor:pointer;
+    list-style:none;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  summary::-webkit-details-marker{display:none;}
+  .details-body{padding:0 14px 14px;}
+  textarea{
+    width:100%;
+    background:#ffffff;
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:12px;
+    font-family:"SF Mono",Monaco,Consolas,monospace;
+    line-height:1.6;
+    resize:vertical;
+    min-height:140px;
+  }
+  textarea:focus{outline:none;border-color:#a8a5f2;}
+  .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .action-btn{
+    border:1px solid var(--border);
+    background:#ffffff;
+    color:var(--text);
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .action-btn.primary{
+    background:var(--text);
+    color:#ffffff;
+    border-color:var(--text);
+  }
+  .action-btn:active{transform:scale(0.97);}
+  .empty-note{color:var(--muted);font-size:12px;margin-top:6px;}
+
+  /* main card */
+  .card{
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 18px;
+    margin-bottom:10px;
+    background:var(--card);
+  }
+  .placeholder{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  .score-row{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  .score-num{font-size:40px;font-weight:700;line-height:1;}
+  .score-num .max{font-size:14px;color:var(--muted);font-weight:400;}
+  .score-info h2{margin:0 0 4px;font-size:18px;font-weight:600;}
+  .score-info .meta{color:var(--muted);font-size:13px;margin:0;}
+  .badge{
+    padding:4px 12px;
+    border-radius:14px;
+    font-size:12px;
+    font-weight:600;
+    display:inline-block;
+    margin-top:6px;
+  }
+  .badge.bullish{background:var(--green-bg);color:var(--green);}
+  .badge.bearish{background:var(--red-bg);color:var(--red);}
+  .badge.neutral{background:var(--amber-bg);color:var(--amber);}
+
+  .label{font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+
+  /* category bars */
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
+  .cat-card{
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    background:var(--card2);
+  }
+  .cat-card .cat-title{font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .bar-track{height:6px;background:#ece9e3;border-radius:3px;overflow:hidden;margin-bottom:6px;}
+  .bar-fill{height:100%;border-radius:3px;}
+  .cat-card .cat-val{font-size:15px;font-weight:600;}
+
+  /* detail rows */
+  .detail-title{font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .row{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding:7px 0;border-bottom:1px solid var(--border);
+    font-size:13px;
+    gap:12px;
+  }
+  .row:last-child{border-bottom:none;}
+  .row .k{color:var(--text);flex-shrink:0;}
+  .pill{
+    padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;
+    background:var(--card2);color:var(--text);
+    text-align:right;white-space:normal;
+    word-break:break-word;
+    max-width:65%;
+  }
+  .pill.bull{background:var(--green-bg);color:var(--green);}
+  .pill.bear{background:var(--red-bg);color:var(--red);}
+  .pill.neutral{background:var(--amber-bg);color:var(--amber);}
+
+  /* levels */
+  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .level-card{
+    border:1px solid var(--border);border-radius:10px;
+    padding:12px;text-align:center;background:var(--card2);
+  }
+  .level-card .label{margin-bottom:6px;}
+  .level-card .value{font-size:15px;font-weight:600;}
+
+  .summary{
+    border:1px solid var(--border);
+    border-left:3px solid var(--text);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:13px;
+    color:var(--text);
+    background:var(--card2);
+  }
+
+  .updated{font-size:11px;color:var(--muted);text-align:right;margin-top:4px;}
+
+  .toast{
+    position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+    background:var(--text);color:#fff;
+    padding:8px 16px;border-radius:8px;font-size:12px;
+    opacity:0;transition:opacity .2s ease;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <details id="pasteBox" open>
+    <summary>
+      <span>Paste GPT bias output</span>
+      <span style="color:var(--muted); font-weight:400;">tap to collapse</span>
+    </summary>
+    <div class="details-body">
+      <textarea id="rawInput" placeholder="GIFT_NIFTY: Gap Up +190
+DOW_JONES: Flat 0
+ASIA: Positive
+EMA20: Above
+DMA200: Above
+RSI: Bullish
+MACD: Above Zero
+TREND: Uptrend
+PREV_CANDLE: Bullish
+VIX: Moderate 14.5
+FII: Mild Buy ₹1200Cr
+PCR: Bullish 1.08
+OI_ATM: PE Buildup
+MAX_PAIN: Above 23500
+MACRO_EVENT: None
+BIAS: Mildly Bullish
+BIAS_SCORE: 7
+CONFIDENCE: Medium
+SUPPORT: 23450, 23300
+RESISTANCE: 23750, 23900
+DECISION_ZONE: 23550-23650
+SUMMARY: Majority of signals lean bullish..."></textarea>
+      <div class="actions">
+        <button class="action-btn primary" id="parseBtn">Update bias</button>
+        <button class="action-btn" id="clearBtn">Clear</button>
+      </div>
+      <div class="empty-note">Paste your custom GPT's reply (KEY: VALUE format) and tap update. This stays saved on this device.</div>
+    </div>
+  </details>
+
+  <div id="placeholder" class="card placeholder">
+    No bias data yet. Paste your GPT output above and tap update.
+  </div>
+
+  <div id="dashboard" class="hidden">
+
+    <div class="card">
+      <div class="score-row">
+        <div class="score-num"><span id="scoreNum">-</span><span class="max"> /10</span></div>
+        <div class="score-info">
+          <h2 id="biasLabel">-</h2>
+          <p class="meta" id="confLabel">-</p>
+          <span class="badge" id="biasBadge">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">Score breakdown</div>
+      <div class="grid2">
+        <div class="cat-card">
+          <div class="cat-title">Global cues</div>
+          <div class="bar-track"><div class="bar-fill" id="bar-global" style="background:var(--green);width:0%;"></div></div>
+          <div class="cat-val" id="val-global">-/10</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-title">Technical</div>
+          <div class="bar-track"><div class="bar-fill" id="bar-technical" style="background:var(--blue);width:0%;"></div></div>
+          <div class="cat-val" id="val-technical">-/10</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-title">Structure</div>
+          <div class="bar-track"><div class="bar-fill" id="bar-structure" style="background:var(--purple);width:0%;"></div></div>
+          <div class="cat-val" id="val-structure">-/10</div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-title">F&amp;O / FII</div>
+          <div class="bar-track"><div class="bar-fill" id="bar-fo" style="background:var(--amber);width:0%;"></div></div>
+          <div class="cat-val" id="val-fo">-/10</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">Levels to watch</div>
+      <div class="levels">
+        <div class="level-card">
+          <div class="label">Support</div>
+          <div class="value" id="lvl-support">-</div>
+        </div>
+        <div class="level-card">
+          <div class="label">Decision zone</div>
+          <div class="value" id="lvl-zone">-</div>
+        </div>
+        <div class="level-card">
+          <div class="label">Resistance</div>
+          <div class="value" id="lvl-resistance">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="detail-title">Global cues</div>
+      <div id="rows-global"></div>
+    </div>
+
+    <div class="card">
+      <div class="detail-title">Technicals</div>
+      <div id="rows-technical"></div>
+    </div>
+
+    <div class="card">
+      <div class="detail-title">Market structure</div>
+      <div id="rows-structure"></div>
+    </div>
+
+    <div class="card">
+      <div class="detail-title">F&amp;O / institutional</div>
+      <div id="rows-fo"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">Summary</div>
+      <div class="summary" id="summaryBox">-</div>
+      <div class="updated" id="updatedAt"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Updated</div>
+
+<script>
+const STORAGE_KEY = 'nifty_bias_raw_v1';
+
+const KEYWORD_SENTIMENT = {
+  bull: ['bullish','bull engulf','bullish cross','above','gap up','up','positive','buy','pe buildup','ce unwinding','below max pain','uptrend','low fear'],
+  bear: ['bearish','bear engulf','bearish cross','below','gap down','down','negative','sell','ce buildup','pe unwinding','above max pain','downtrend','high fear','overbought','oversold']
+};
+
+function classify(text){
+  if(!text) return 'neutral';
+  const t = text.toLowerCase();
+  for(const kw of KEYWORD_SENTIMENT.bear){
+    if(t.includes(kw)) return (t.includes('mild') || t.includes('moderate')) ? 'neutral' : 'bear';
+  }
+  for(const kw of KEYWORD_SENTIMENT.bull){
+    if(t.includes(kw)) return 'bull';
+  }
+  return 'neutral';
+}
+
+function scoreFor(sentiment){
+  if(sentiment === 'bull') return 10;
+  if(sentiment === 'bear') return 0;
+  return 5;
+}
+
+function parseKeyValues(raw){
+  const data = {};
+  const lines = raw.split('\n');
+  lines.forEach(line => {
+    const m = line.match(/^\s*([A-Za-z0-9_ ]{2,30}?)\s*:\s*(.+?)\s*$/);
+    if(m){
+      const key = m[1].trim().toUpperCase().replace(/\s+/g,'_');
+      const val = m[2].trim();
+      if(val) data[key] = val;
+    }
+  });
+  return data;
+}
+
+function makeRow(label, value){
+  const sentiment = classify(value);
+  const cls = sentiment === 'bull' ? 'bull' : (sentiment === 'bear' ? 'bear' : 'neutral');
+  return '<div class="row"><span class="k">'+label+'</span><span class="pill '+cls+'">'+value+'</span></div>';
+}
+
+function buildCategory(containerId, items, data){
+  const el = document.getElementById(containerId);
+  let html = '';
+  let scores = [];
+  items.forEach(([label, key]) => {
+    const val = data[key];
+    if(val){
+      html += makeRow(label, val);
+      scores.push(scoreFor(classify(val)));
+    }
+  });
+  el.innerHTML = html || '<div class="empty-note">No data found.</div>';
+  if(scores.length === 0) return null;
+  return scores.reduce((a,b)=>a+b,0) / scores.length;
+}
+
+function render(raw){
+  const data = parseKeyValues(raw);
+
+  const globalScore = buildCategory('rows-global', [
+    ['GIFT Nifty','GIFT_NIFTY'],
+    ['Dow Jones','DOW_JONES'],
+    ['Asia markets','ASIA']
+  ], data);
+
+  const techScore = buildCategory('rows-technical', [
+    ['vs 20 EMA','EMA20'],
+    ['vs 200 DMA','DMA200'],
+    ['RSI (14)','RSI'],
+    ['MACD','MACD']
+  ], data);
+
+  const structScore = buildCategory('rows-structure', [
+    ['Weekly trend','TREND'],
+    ['Prev candle','PREV_CANDLE'],
+    ['India VIX','VIX']
+  ], data);
+
+  const foScore = buildCategory('rows-fo', [
+    ['FII cash','FII'],
+    ['PCR','PCR'],
+    ['OI at ATM','OI_ATM'],
+    ['Max pain','MAX_PAIN'],
+    ['Macro event','MACRO_EVENT']
+  ], data);
+
+  const catScores = [globalScore, techScore, structScore, foScore].filter(s => s !== null);
+  let overall;
+  if(data.BIAS_SCORE && !isNaN(parseFloat(data.BIAS_SCORE))){
+    overall = parseFloat(data.BIAS_SCORE);
+  } else if(catScores.length){
+    overall = catScores.reduce((a,b)=>a+b,0) / catScores.length;
+  } else {
+    overall = 5;
+  }
+  overall = Math.max(0, Math.min(10, overall));
+
+  document.getElementById('scoreNum').textContent = overall.toFixed(1);
+
+  const setCat = (id, val) => {
+    const display = (val === null) ? '-' : val.toFixed(1) + '/10';
+    document.getElementById('val-'+id).textContent = display;
+    document.getElementById('bar-'+id).style.width = (val === null ? 0 : val*10) + '%';
+  };
+  setCat('global', globalScore);
+  setCat('technical', techScore);
+  setCat('structure', structScore);
+  setCat('fo', foScore);
+
+  let biasLabel = data.BIAS || '-';
+  document.getElementById('biasLabel').textContent = biasLabel;
+  document.getElementById('confLabel').textContent = data.CONFIDENCE ? (data.CONFIDENCE + ' confidence') : '';
+
+  const badge = document.getElementById('biasBadge');
+  const lowerBias = biasLabel.toLowerCase();
+  badge.className = 'badge';
+  if(lowerBias.includes('bull')){
+    badge.classList.add('bullish');
+  } else if(lowerBias.includes('bear')){
+    badge.classList.add('bearish');
+  } else {
+    badge.classList.add('neutral');
+  }
+  badge.textContent = biasLabel;
+
+  document.getElementById('lvl-support').textContent = data.SUPPORT || '-';
+  document.getElementById('lvl-zone').textContent = data.DECISION_ZONE || '-';
+  document.getElementById('lvl-resistance').textContent = data.RESISTANCE || '-';
+
+  document.getElementById('summaryBox').textContent = data.SUMMARY || 'No summary provided.';
+
+  const now = new Date();
+  document.getElementById('updatedAt').textContent = 'Updated ' + now.toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'});
+
+  document.getElementById('placeholder').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+}
+
+document.getElementById('parseBtn').addEventListener('click', () => {
+  const raw = document.getElementById('rawInput').value;
+  if(!raw.trim()) return;
+  localStorage.setItem(STORAGE_KEY, raw);
+  render(raw);
+  document.getElementById('pasteBox').removeAttribute('open');
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1400);
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('rawInput').value = '';
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('placeholder').classList.remove('hidden');
+});
+
+const saved = localStorage.getItem(STORAGE_KEY);
+if(saved){
+  document.getElementById('rawInput').value = saved;
+  render(saved);
+  document.getElementById('pasteBox').removeAttribute('open');
+}
+</script>
+</body>
+</html>
