@@ -217,42 +217,6 @@
   </div>
   <div class="fetch-status" id="fetchStatus">Loading live signals…</div>
 
-  <details id="pasteBox">
-    <summary>
-      <span>Manual override — paste your own KEY:VALUE data</span>
-      <span style="color:var(--muted); font-weight:400;">tap to expand</span>
-    </summary>
-    <div class="details-body">
-      <textarea id="rawInput" placeholder="GIFT_NIFTY: Gap Up +190
-DOW_JONES: Flat 0
-ASIA: Positive
-EMA20: Above
-DMA200: Above
-RSI: Bullish
-MACD: Above Zero
-TREND: Uptrend
-PREV_CANDLE: Bullish
-VIX: Moderate 14.5
-FII: Mild Buy ₹1200Cr
-PCR: Bullish 1.08
-OI_ATM: PE Buildup
-MAX_PAIN: Above 23500
-MACRO_EVENT: None
-BIAS: Mildly Bullish
-BIAS_SCORE: 7
-CONFIDENCE: Medium
-SUPPORT: 23450, 23300
-RESISTANCE: 23750, 23900
-DECISION_ZONE: 23550-23650
-SUMMARY: Majority of signals lean bullish..."></textarea>
-      <div class="actions">
-        <button class="action-btn primary" id="parseBtn">Update bias</button>
-        <button class="action-btn" id="clearBtn">Clear override, use live data</button>
-      </div>
-      <div class="empty-note">This overrides the auto-fetched data until you clear it. Stays saved on this device.</div>
-    </div>
-  </details>
-
   <div id="placeholder" class="card placeholder">
     No bias data yet.
   </div>
@@ -344,11 +308,8 @@ SUMMARY: Majority of signals lean bullish..."></textarea>
 
 </div>
 
-<div class="toast" id="toast">Updated</div>
 
 <script>
-const STORAGE_KEY = 'nifty_bias_raw_v1';
-const OVERRIDE_KEY = 'nifty_bias_override_v1';
 const API_URL = '/api/nifty-bias';
 
 const KEYWORD_SENTIMENT = {
@@ -421,7 +382,6 @@ function render(raw){
   const data = parseKeyValues(raw);
 
   const globalScore = buildCategory('rows-global', [
-    ['GIFT Nifty','GIFT_NIFTY'],
     ['Dow Jones','DOW_JONES'],
     ['Asia markets','ASIA']
   ], data);
@@ -499,27 +459,6 @@ function render(raw){
   document.getElementById('dashboard').classList.remove('hidden');
 }
 
-// ── Manual override controls ────────────────────────────────────────────
-document.getElementById('parseBtn').addEventListener('click', () => {
-  const raw = document.getElementById('rawInput').value;
-  if(!raw.trim()) return;
-  localStorage.setItem(STORAGE_KEY, raw);
-  localStorage.setItem(OVERRIDE_KEY, '1');
-  render(raw);
-  document.getElementById('fetchStatus').textContent = 'Showing manual override — live fetch paused';
-  const toast = document.getElementById('toast');
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 1400);
-});
-
-document.getElementById('clearBtn').addEventListener('click', () => {
-  document.getElementById('rawInput').value = '';
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(OVERRIDE_KEY);
-  document.getElementById('pasteBox').removeAttribute('open');
-  loadLive();
-});
-
 // ── Live auto-fetch ──────────────────────────────────────────────────────
 async function loadLive(){
   const statusEl = document.getElementById('fetchStatus');
@@ -540,18 +479,9 @@ async function loadLive(){
 
 document.getElementById('refreshBtn').addEventListener('click', loadLive);
 
-// On load: use manual override if one is saved, otherwise fetch live.
-const hasOverride = localStorage.getItem(OVERRIDE_KEY) === '1';
-const saved = localStorage.getItem(STORAGE_KEY);
-if(hasOverride && saved){
-  document.getElementById('rawInput').value = saved;
-  document.getElementById('pasteBox').setAttribute('open','');
-  render(saved);
-  document.getElementById('fetchStatus').textContent = 'Showing manual override — live fetch paused';
-} else {
-  loadLive();
-  setInterval(loadLive, 5 * 60 * 1000);
-}
+// On load: always fetch live, refresh every 5 minutes.
+loadLive();
+setInterval(loadLive, 5 * 60 * 1000);
 </script>
 </body>
 </html>
