@@ -1,19 +1,16 @@
 // api/niftybank.js
 // Vercel serverless proxy — bypasses Yahoo Finance CORS block for browser fetches.
-// Uses the v8 chart endpoint (same as nifty.js) — the v7 quote endpoint now
-// requires an auth cookie/crumb for unauthenticated requests, which caused
-// "Unavailable" on the earlier version of this file.
+// Uses the v8 chart endpoint (same as nifty.js). ^NSEBANK is an index
+// ticker — Yahoo requires a session cookie + crumb for these now.
+// See api/_yahoo-session.js for the shared auth helper.
+
+import { yahooFetch } from "./_yahoo-session.js";
 
 export default async function handler(req, res) {
   try {
     const url = "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEBANK?interval=1d&range=1d";
 
-    const upstream = await fetch(url, {
-      headers: {
-        // Yahoo blocks requests with no user-agent
-        "User-Agent": "Mozilla/5.0 (compatible; QuantMonarchWidget/1.0)"
-      }
-    });
+    const upstream = await yahooFetch(url, "%5ENSEBANK");
 
     if (!upstream.ok) {
       return res.status(upstream.status).json({ error: "Upstream fetch failed" });
