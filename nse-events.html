@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Event Calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { background:transparent; color:#111; font-family:'DM Sans',sans-serif; width:100%; height:100%; overflow:hidden; }
+  .wrap { width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; }
+
+  .hdr {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 14px; background:#fff;
+    border:1px solid #e8e8e8; border-radius:10px 10px 0 0; border-bottom:none;
+    flex-shrink:0;
+  }
+  .hdr-left { display:flex; align-items:center; gap:8px; }
+  .live-ring { width:7px; height:7px; border-radius:50%; background:#22c55e; animation:ring 2s ease-in-out infinite; }
+  @keyframes ring {
+    0%  { box-shadow:0 0 0 0 rgba(34,197,94,.5); }
+    70% { box-shadow:0 0 0 5px rgba(34,197,94,0); }
+    100%{ box-shadow:0 0 0 0 rgba(34,197,94,0); }
+  }
+  .hdr-title { font-size:11px; font-weight:600; letter-spacing:.7px; text-transform:uppercase; color:#111; }
+  .hdr-right { display:flex; align-items:center; gap:6px; }
+  .src-badge {
+    font-size:9px; font-weight:500; padding:2px 7px; border-radius:999px;
+    background:#e0f2fe; border:1px solid #bae6fd; color:#075985;
+  }
+
+  .meta {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:4px 14px; background:#f9f9f9;
+    border:1px solid #e8e8e8; border-bottom:none; flex-shrink:0;
+  }
+  .meta-txt  { font-size:10px; color:#aaa; font-family:'DM Mono',monospace; }
+  .meta-right { font-size:9px; font-weight:500; padding:2px 7px; border-radius:999px; background:#f0f0f0; border:1px solid #e0e0e0; color:#888; }
+
+  .events-wrap {
+    background:#f9f9f9; border:1px solid #e8e8e8; border-radius:0 0 10px 10px;
+    flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
+  }
+  .events { display:flex; flex-direction:column; flex:1; min-height:0; overflow-y:auto; padding:6px; gap:5px; }
+  .events::-webkit-scrollbar { width:3px; }
+  .events::-webkit-scrollbar-thumb { background:#ddd; border-radius:99px; }
+
+  .card {
+    background:#fff; border:1px solid #ebebeb; border-radius:10px;
+    transition:box-shadow .15s,border-color .15s; flex-shrink:0;
+  }
+  .card:hover { box-shadow:0 2px 8px rgba(0,0,0,.06); border-color:#d8d8d8; }
+  .card-top { display:flex; align-items:center; gap:10px; padding:10px 12px; }
+
+  .cat-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+  .ci-earnings{background:#dbeafe;} .ci-dividend{background:#dcfce7;}
+  .ci-corpaction{background:#fef3e2;} .ci-agm{background:#ede9fe;}
+  .ci-boardmeeting{background:#fce7f3;} .ci-other{background:#f3f4f6;}
+
+  .card-info { flex:1; min-width:0; }
+  .card-title { font-size:12px; font-weight:500; color:#111; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-company { font-size:10px; color:#888; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-sub { display:flex; align-items:center; gap:5px; margin-top:3px; }
+  .card-date { font-size:10px; color:#888; font-family:'DM Mono',monospace; }
+  .today-dot { width:5px; height:5px; border-radius:50%; background:#e24b4a; flex-shrink:0; animation:blink .9s ease-in-out infinite; }
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .cat-pill { font-size:9px; font-weight:500; padding:1px 6px; border-radius:999px; }
+  .cp-earnings{background:#dbeafe;color:#1e3a8a;} .cp-dividend{background:#dcfce7;color:#14532d;}
+  .cp-corpaction{background:#fef3e2;color:#92400e;} .cp-agm{background:#ede9fe;color:#4c1d95;}
+  .cp-boardmeeting{background:#fce7f3;color:#831843;} .cp-other{background:#f3f4f6;color:#374151;}
+
+  .state-box {
+    padding:30px 20px; text-align:center; background:#f9f9f9;
+    border:1px solid #e8e8e8; border-radius:0 0 10px 10px; flex:1;
+  }
+  .state-icon{font-size:24px;margin-bottom:8px;}
+  .state-title{font-size:12px;font-weight:500;color:#111;margin-bottom:3px;}
+  .state-sub{font-size:10px;color:#aaa;line-height:1.6;}
+  .dots{display:flex;justify-content:center;gap:5px;margin-top:10px;}
+  .dots span{width:5px;height:5px;border-radius:50%;background:#ccc;animation:dp 1.2s ease-in-out infinite;}
+  .dots span:nth-child(2){animation-delay:.2s;}
+  .dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes dp{0%,100%{opacity:.2;transform:scale(.7);}50%{opacity:1;transform:scale(1);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="live-ring"></div>
+      <div class="hdr-title">NSE Event Calendar</div>
+    </div>
+    <div class="hdr-right">
+      <div class="src-badge">NSE · Official</div>
+    </div>
+  </div>
+  <div class="meta" id="metaRow" style="display:none;">
+    <div class="meta-txt" id="metaDate">—</div>
+    <div class="meta-right" id="evCount">—</div>
+  </div>
+  <div id="content" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+    <div class="state-box">
+      <div class="state-icon">⏳</div>
+      <div class="state-title">Loading events…</div>
+      <div class="dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Same-project relative path — Vercel serves api/nse-events.js at /api/nse-events.
+const API_URL = '/api/nse-events';
+
+const CAT = {
+  'Earnings'     :{icon:'📈', ci:'ci-earnings',     cp:'cp-earnings'},
+  'Dividend'     :{icon:'💰', ci:'ci-dividend',     cp:'cp-dividend'},
+  'Corp Action'  :{icon:'🔀', ci:'ci-corpaction',   cp:'cp-corpaction'},
+  'AGM/EGM'      :{icon:'🗳️', ci:'ci-agm',          cp:'cp-agm'},
+  'Board Meeting':{icon:'🏢', ci:'ci-boardmeeting', cp:'cp-boardmeeting'},
+  'Other'        :{icon:'📅', ci:'ci-other',        cp:'cp-other'},
+};
+
+// ── IST helper ────────────────────────────────────────────────────────────
+function todayIST() {
+  return new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
+}
+
+// NSE dates commonly come back as DD-MMM-YYYY (e.g. "15-Jul-2026") or
+// DD-MM-YYYY. Normalize to YYYY-MM-DD for sorting/comparison.
+function normalizeDate(raw) {
+  if (!raw) return null;
+  const monthMap = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',
+                     jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+  const m1 = raw.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+  if (m1) {
+    const mon = monthMap[m1[2].toLowerCase()];
+    if (mon) return `${m1[3]}-${mon}-${String(m1[1]).padStart(2,'0')}`;
+  }
+  const m2 = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (m2) return `${m2[3]}-${String(m2[2]).padStart(2,'0')}-${String(m2[1]).padStart(2,'0')}`;
+  const m3 = raw.match(/^\d{4}-\d{2}-\d{2}/);
+  if (m3) return m3[0];
+  return null;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function renderEvents(events, updatedAt) {
+  const today = todayIST();
+
+  const withDates = events
+    .map(e => ({ ...e, _d: normalizeDate(e.date) }))
+    .filter(e => e._d);
+
+  const upcoming = withDates
+    .filter(e => e._d >= today)
+    .sort((a, b) => a._d > b._d ? 1 : -1);
+
+  const timeStr = updatedAt
+    ? new Date(updatedAt).toLocaleTimeString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})
+    : '—';
+  document.getElementById('metaDate').textContent = 'NSE updated ' + timeStr;
+  document.getElementById('evCount').textContent  = upcoming.length + ' events ahead';
+  document.getElementById('metaRow').style.display = 'flex';
+
+  if (!upcoming.length) {
+    document.getElementById('content').innerHTML =
+      `<div class="state-box"><div class="state-icon">✅</div><div class="state-title">No upcoming events</div></div>`;
+    return;
+  }
+
+  let html = '<div class="events-wrap"><div class="events">';
+  for (const ev of upcoming) {
+    const cat     = CAT[ev.category] || CAT['Other'];
+    const isToday = ev._d === today;
+    const dl      = new Date(ev._d + 'T00:00:00')
+      .toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+    const title   = ev.purpose || ev.category;
+    const company = ev.company || ev.symbol || '';
+    html += `<div class="card">
+      <div class="card-top">
+        <div class="cat-icon ${cat.ci}">${cat.icon}</div>
+        <div class="card-info">
+          <div class="card-title">${title}</div>
+          <div class="card-company">${company}</div>
+          <div class="card-sub">
+            ${isToday ? '<span class="today-dot"></span>' : ''}
+            <span class="card-date">${isToday ? 'Today' : dl}</span>
+            <span class="cat-pill ${cat.cp}">${ev.category}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+  html += '</div></div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function showError(msg) {
+  document.getElementById('content').innerHTML =
+    `<div class="state-box">
+       <div class="state-icon">⚠️</div>
+       <div class="state-title">Could not load</div>
+       <div class="state-sub">${msg}</div>
+     </div>`;
+}
+
+// ── Fetch from NSE proxy ──────────────────────────────────────────────────
+async function loadEvents() {
+  try {
+    const res = await fetch(API_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('Proxy fetch failed: HTTP ' + res.status);
+    const d = await res.json();
+    if (!d.events || !d.events.length) throw new Error('No events returned — NSE may be rate-limiting or field mapping needs adjusting');
+    renderEvents(d.events, d.updatedAt);
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+loadEvents();
+setInterval(loadEvents, 5 * 60 * 1000); // NSE data is daily-granularity, 5 min refresh is plenty
+</script>
+</body>
+</html>
