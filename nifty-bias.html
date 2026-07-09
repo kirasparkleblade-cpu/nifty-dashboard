@@ -298,11 +298,7 @@
       <div id="rows-fo"></div>
     </div>
 
-    <div class="card">
-      <div class="label">Summary</div>
-      <div class="summary" id="summaryBox">-</div>
-      <div class="updated" id="updatedAt"></div>
-    </div>
+    <div class="updated" id="updatedAt"></div>
 
   </div>
 
@@ -383,7 +379,9 @@ function render(raw){
 
   const globalScore = buildCategory('rows-global', [
     ['Dow Jones','DOW_JONES'],
-    ['Asia markets','ASIA']
+    ['Asia markets','ASIA'],
+    ['Crude Oil','CRUDE_OIL'],
+    ['USD/INR','USDINR']
   ], data);
 
   const techScore = buildCategory('rows-technical', [
@@ -449,8 +447,6 @@ function render(raw){
   document.getElementById('lvl-support').textContent = data.SUPPORT || '-';
   document.getElementById('lvl-zone').textContent = data.DECISION_ZONE || '-';
   document.getElementById('lvl-resistance').textContent = data.RESISTANCE || '-';
-
-  document.getElementById('summaryBox').textContent = data.SUMMARY || 'No summary provided.';
 
   const now = new Date();
   document.getElementById('updatedAt').textContent = 'Updated ' + now.toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'});
