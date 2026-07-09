@@ -9,7 +9,10 @@
 //                   -> India VIX, option-chain (PCR/OI/Max Pain), FII cash flows
 //
 // CAVEATS (be aware before trusting this at market open):
-//  - GIFT_NIFTY is not available from either source — left as "N/A".
+//  - GIFT_NIFTY is dropped entirely — no available source (not on Yahoo or
+//    NSE's public API surface). If you get a broker/data-vendor API key
+//    later (Zerodha Kite, Upstox, Fyers, TrueData, etc.), send it over and
+//    this can be added back in one edit.
 //  - NSE's option-chain and fiidiiTradeReact endpoints are its most
 //    aggressively bot-protected. They can intermittently fail or rate-limit
 //    even with a valid cookie. Each section fails independently — if NSE
@@ -203,7 +206,7 @@ export default async function handler(req, res) {
     errors.asia = err.message;
   }
 
-  out.GIFT_NIFTY = "N/A (not available via Yahoo/NSE public APIs)";
+  // GIFT_NIFTY intentionally omitted — no available source (not on Yahoo or NSE public APIs).
 
   // ── NSE: VIX, option chain, FII ──────────────────────────────────────
   let cookie = null;
