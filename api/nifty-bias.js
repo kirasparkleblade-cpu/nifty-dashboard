@@ -41,6 +41,43 @@ const NSE_HEADERS = {
   "referer": NSE_BASE,
 };
 
+const YAHOO_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+// Yahoo now gates index tickers (anything starting with ^) behind a session
+// cookie + crumb token on BOTH v7 quote and v8 chart — confirmed live: CL=F
+// and INR=X worked unauthenticated while ^NSEI/^DJI/^N225/^VIX all 404'd.
+// Non-index symbols don't need this. Cached at module scope so a warm
+// Lambda container reuses the session instead of re-authenticating on
+// every request.
+let yahooSessionCache = null;
+let yahooSessionExpiry = 0;
+
+async function getYahooSession() {
+  if (yahooSessionCache && Date.now() < yahooSessionExpiry) return yahooSessionCache;
+
+  const homeRes = await fetch("https://finance.yahoo.com", {
+    headers: { "User-Agent": YAHOO_UA },
+  });
+  const setCookie = homeRes.headers.get("set-cookie") || "";
+  const cookie = setCookie
+    .split(/,(?=[^;]+?=)/)
+    .map((c) => c.split(";")[0].trim())
+    .filter(Boolean)
+    .join("; ");
+
+  const crumbRes = await fetch("https://query1.finance.yahoo.com/v1/test/getcrumb", {
+    headers: { "User-Agent": YAHOO_UA, cookie },
+  });
+  if (!crumbRes.ok) throw new Error(`Yahoo crumb fetch -> HTTP ${crumbRes.status}`);
+  const crumb = (await crumbRes.text()).trim();
+  if (!crumb || crumb.includes("<html")) throw new Error("Yahoo crumb fetch -> invalid crumb");
+
+  yahooSessionCache = { cookie, crumb };
+  yahooSessionExpiry = Date.now() + 10 * 60 * 1000; // 10 min
+  return yahooSessionCache;
+}
+
 async function getNseCookie() {
   const homeRes = await fetch(NSE_BASE, { headers: NSE_HEADERS });
   const setCookie = homeRes.headers.get("set-cookie") || "";
@@ -60,12 +97,19 @@ async function nseFetch(path, cookie) {
 }
 
 async function yahooDaily(symbol, range = "6mo") {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+  const isIndex = symbol.includes("%5E") || symbol.startsWith("^");
+  let url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
     symbol
   )}?interval=1d&range=${range}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; QuantMonarchWidget/1.0)" },
-  });
+  const headers = { "User-Agent": YAHOO_UA };
+
+  if (isIndex) {
+    const session = await getYahooSession();
+    url += `&crumb=${encodeURIComponent(session.crumb)}`;
+    headers.cookie = session.cookie;
+  }
+
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`Yahoo ${symbol} -> HTTP ${res.status}`);
   const data = await res.json();
   const result = data?.chart?.result?.[0];
@@ -78,17 +122,23 @@ async function yahooDaily(symbol, range = "6mo") {
 }
 
 // v7 quote endpoint — tried first per request, since it sometimes returns
-// richer fields (percent change already computed) than v8 chart. It has
-// been unreliable before (it's what broke Bank Nifty — Yahoo can require an
-// auth cookie/crumb for v7 that v8 chart doesn't need). If it fails, we
-// silently fall back to the v8 chart endpoint for the same symbol so the
+// richer fields (percent change already computed) than v8 chart. Index
+// tickers need the same cookie+crumb session as v8 chart. If v7 still
+// fails after that, we fall back to v8 chart for the same symbol so the
 // widget doesn't go blank.
 async function yahooQuoteWithFallback(symbol) {
   try {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; QuantMonarchWidget/1.0)" },
-    });
+    const isIndex = symbol.includes("%5E") || symbol.startsWith("^");
+    let url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
+    const headers = { "User-Agent": YAHOO_UA };
+
+    if (isIndex) {
+      const session = await getYahooSession();
+      url += `&crumb=${encodeURIComponent(session.crumb)}`;
+      headers.cookie = session.cookie;
+    }
+
+    const res = await fetch(url, { headers });
     if (!res.ok) throw new Error(`v7 HTTP ${res.status}`);
     const data = await res.json();
     const result = data?.quoteResponse?.result?.[0];
