@@ -59,7 +59,9 @@ async function yahooDaily(symbol, range = "6mo") {
   if (!result) throw new Error(`Yahoo ${symbol} -> malformed response`);
   const closes = result.indicators.quote[0].close.filter((c) => c != null);
   const opens = result.indicators.quote[0].open.filter((c) => c != null);
-  return { meta: result.meta, closes, opens };
+  const highs = result.indicators.quote[0].high.filter((c) => c != null);
+  const lows = result.indicators.quote[0].low.filter((c) => c != null);
+  return { meta: result.meta, closes, opens, highs, lows };
 }
 
 // ── Indicator math ──────────────────────────────────────────────────────
@@ -151,14 +153,24 @@ function computeAtmBuildup(chain, spot) {
   return "No clear buildup";
 }
 
+function classicPivots(high, low, close) {
+  const p = (high + low + close) / 3;
+  const r1 = 2 * p - low;
+  const s1 = 2 * p - high;
+  const r2 = p + (high - low);
+  const s2 = p - (high - low);
+  return { pivot: p, r1, r2, s1, s2 };
+}
+
 export default async function handler(req, res) {
   const out = {};
   const errors = {};
 
   // ── NIFTY technicals from Yahoo ──────────────────────────────────────
   let spot = null;
+  let pivots = null;
   try {
-    const { meta, closes, opens } = await yahooDaily("%5ENSEI", "1y");
+    const { meta, closes, opens, highs, lows } = await yahooDaily("%5ENSEI", "1y");
     spot = meta.regularMarketPrice;
     const ema20 = ema(closes, 20);
     const dma200 = sma(closes, 200);
@@ -184,6 +196,13 @@ export default async function handler(req, res) {
         ? "Downtrend"
         : "Sideways";
     out.PREV_CANDLE = lastClose > lastOpen ? "Bullish" : "Bearish";
+
+    // Pivots: use the last fully completed session. During live trading
+    // hours the most recent bar is still forming, so fall back one bar.
+    const idx = meta.marketState === "REGULAR" ? highs.length - 2 : highs.length - 1;
+    if (idx >= 0) {
+      pivots = classicPivots(highs[idx], lows[idx], closes[idx]);
+    }
   } catch (err) {
     errors.technicals = err.message;
   }
@@ -204,6 +223,25 @@ export default async function handler(req, res) {
     out.ASIA = chg >= 0 ? "Positive" : "Negative";
   } catch (err) {
     errors.asia = err.message;
+  }
+
+  // ── Crude Oil (WTI) ───────────────────────────────────────────────────
+  try {
+    const { meta } = await yahooDaily("CL=F", "5d");
+    const chg = meta.regularMarketPrice - meta.chartPreviousClose;
+    const pct = (chg / meta.chartPreviousClose) * 100;
+    out.CRUDE_OIL = `$${meta.regularMarketPrice.toFixed(1)} (${chg >= 0 ? "+" : ""}${pct.toFixed(1)}%)`;
+  } catch (err) {
+    errors.crudeOil = err.message;
+  }
+
+  // ── USD/INR ───────────────────────────────────────────────────────────
+  try {
+    const { meta } = await yahooDaily("INR=X", "5d");
+    const chg = meta.regularMarketPrice - meta.chartPreviousClose;
+    out.USDINR = `₹${meta.regularMarketPrice.toFixed(2)} (${chg >= 0 ? "+" : ""}${chg.toFixed(2)})`;
+  } catch (err) {
+    errors.usdinr = err.message;
   }
 
   // GIFT_NIFTY intentionally omitted — no available source (not on Yahoo or NSE public APIs).
@@ -255,7 +293,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── Macro events: reuse the event-calendar proxy logic (today/tomorrow only) ──
+  // ── Macro events: pull the nearest upcoming item from the event-calendar proxy ──
   try {
     const proto = req.headers["x-forwarded-proto"] || "https";
     const host = req.headers["host"];
@@ -263,8 +301,17 @@ export default async function handler(req, res) {
     if (evRes.ok) {
       const evData = await evRes.json();
       const todayIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const soon = (evData.events || []).find((e) => e.category === "Board Meeting" || (e.purpose || "").toLowerCase().includes("rbi"));
-      out.MACRO_EVENT = soon ? `${soon.purpose} (${soon.company || soon.symbol || ""})` : "None flagged";
+      const cutoff = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+      cutoff.setDate(cutoff.getDate() + 5);
+      const cutoffStr = cutoff.toISOString().split("T")[0];
+
+      const upcoming = (evData.events || [])
+        .filter((e) => e.date && e.date >= todayIST && e.date <= cutoffStr)
+        .sort((a, b) => (a.date > b.date ? 1 : -1));
+
+      out.MACRO_EVENT = upcoming.length
+        ? `${upcoming[0].purpose || upcoming[0].category} — ${upcoming[0].company || upcoming[0].symbol || ""} (${upcoming[0].date})`
+        : "None in next 5 days";
     } else {
       out.MACRO_EVENT = "N/A";
     }
@@ -290,10 +337,9 @@ export default async function handler(req, res) {
   out.BIAS_SCORE = String(Math.max(0, Math.min(10, score)));
   out.BIAS = score >= 7 ? "Bullish" : score >= 6 ? "Mildly Bullish" : score <= 3 ? "Bearish" : score <= 4 ? "Mildly Bearish" : "Neutral";
   out.CONFIDENCE = counted >= 8 ? "High" : counted >= 5 ? "Medium" : "Low";
-  out.SUPPORT = "auto-calc pending — add pivot logic if needed";
-  out.RESISTANCE = "auto-calc pending — add pivot logic if needed";
-  out.DECISION_ZONE = "—";
-  out.SUMMARY = `Auto-generated from ${counted} live signals (${bull} bullish, ${bear} bearish). This is a deterministic tally, not AI-written commentary — treat as a quick signal snapshot, not investment advice.`;
+  out.SUPPORT = pivots ? `${pivots.s1.toFixed(0)}, ${pivots.s2.toFixed(0)}` : "N/A — Yahoo fetch failed";
+  out.RESISTANCE = pivots ? `${pivots.r1.toFixed(0)}, ${pivots.r2.toFixed(0)}` : "N/A — Yahoo fetch failed";
+  out.DECISION_ZONE = pivots ? `${pivots.s1.toFixed(0)}–${pivots.r1.toFixed(0)}` : "N/A";
 
   res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
   res.setHeader("Access-Control-Allow-Origin", "*");
