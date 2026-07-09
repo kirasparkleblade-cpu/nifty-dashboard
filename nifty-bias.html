@@ -378,8 +378,10 @@ function render(raw){
   const data = parseKeyValues(raw);
 
   const globalScore = buildCategory('rows-global', [
+    ['GIFT Nifty','GIFT_NIFTY'],
     ['Dow Jones','DOW_JONES'],
-    ['Asia markets','ASIA'],
+    ['Nikkei','NIKKEI'],
+    ['Shanghai','SHANGHAI'],
     ['Crude Oil','CRUDE_OIL'],
     ['USD/INR','USDINR']
   ], data);
@@ -394,7 +396,8 @@ function render(raw){
   const structScore = buildCategory('rows-structure', [
     ['Weekly trend','TREND'],
     ['Prev candle','PREV_CANDLE'],
-    ['India VIX','VIX']
+    ['India VIX','VIX'],
+    ['Global VIX','GLOBAL_VIX']
   ], data);
 
   const foScore = buildCategory('rows-fo', [
