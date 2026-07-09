@@ -288,7 +288,28 @@
 
   new ResizeObserver(resizeCanvas).observe(wrap);
 
+  // ---- Auto-refresh ----
+  // Polls for new candles every REFRESH_MS while the tab is visible.
+  // Pauses when the tab is hidden/minimized to avoid wasted API calls,
+  // and immediately refreshes when the tab becomes visible again.
+  const REFRESH_MS = 30000; // 30 seconds
+  let refreshTimer = null;
+
+  function startAutoRefresh(){
+    stopAutoRefresh();
+    refreshTimer = setInterval(() => {
+      if (!document.hidden) loadData();
+    }, REFRESH_MS);
+  }
+  function stopAutoRefresh(){
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) loadData(); // catch up immediately on return to tab
+  });
+
   // initial load
   resizeCanvas();
   loadData();
+  startAutoRefresh();
 })();
