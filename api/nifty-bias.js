@@ -3,21 +3,34 @@
 // in the same KEY: VALUE shape the widget's textarea parser already expects.
 //
 // Sources:
-//   Yahoo v8 chart  -> NIFTY historicals (EMA20/DMA200/RSI/MACD/trend/prev candle),
-//                       Dow Jones, Nikkei (Asia proxy)
+//   Yahoo v8 chart  -> NIFTY historicals (EMA20/DMA200/RSI/MACD/trend/prev candle,
+//                       pivot S/R), Dow Jones, Crude Oil, USD/INR
+//   Yahoo v7 quote (with automatic v8-chart fallback if v7 fails)
+//                   -> Nikkei, Shanghai, global VIX
+//   api/gift-nifty  -> user-supplied Google Apps Script source for GIFT Nifty
 //   NSE (cookie handshake, same pattern as api/nse-events.js)
 //                   -> India VIX, option-chain (PCR/OI/Max Pain), FII cash flows
 //
 // CAVEATS (be aware before trusting this at market open):
-//  - GIFT_NIFTY is dropped entirely — no available source (not on Yahoo or
-//    NSE's public API surface). If you get a broker/data-vendor API key
-//    later (Zerodha Kite, Upstox, Fyers, TrueData, etc.), send it over and
-//    this can be added back in one edit.
+//  - v7 quote (Nikkei/Shanghai/global VIX) has failed before (it's what
+//    broke Bank Nifty — Yahoo sometimes requires an auth cookie/crumb for
+//    v7 that v8 chart doesn't need). Each call tries v7 first and silently
+//    falls back to v8 chart if it fails — check `errors.*V7` keys in the
+//    response to see if fallback was used.
+//  - GIFT Nifty's field names weren't verifiable ahead of time — my preview
+//    tool respects robots.txt and Google Apps Script blocks it there. The
+//    proxy (api/gift-nifty.js) tries several likely key names and returns
+//    the raw payload for debugging if the price comes back empty.
 //  - NSE's option-chain and fiidiiTradeReact endpoints are its most
 //    aggressively bot-protected. They can intermittently fail or rate-limit
 //    even with a valid cookie. Each section fails independently — if NSE
 //    blocks the option-chain call, you still get Yahoo-derived technicals.
 //  - FII data is provisional/T+1 per NSE's own disclaimer.
+//  - Support/Resistance uses DAILY data (not 1m/5m) — classic pivots are
+//    defined off one full previous session's H/L/C, which daily data
+//    already gives exactly. Finer intraday granularity would only matter
+//    for a different indicator (rolling intraday pivots), not a "better"
+//    version of this one.
 
 const NSE_BASE = "https://www.nseindia.com/";
 const NSE_HEADERS = {
@@ -62,6 +75,41 @@ async function yahooDaily(symbol, range = "6mo") {
   const highs = result.indicators.quote[0].high.filter((c) => c != null);
   const lows = result.indicators.quote[0].low.filter((c) => c != null);
   return { meta: result.meta, closes, opens, highs, lows };
+}
+
+// v7 quote endpoint — tried first per request, since it sometimes returns
+// richer fields (percent change already computed) than v8 chart. It has
+// been unreliable before (it's what broke Bank Nifty — Yahoo can require an
+// auth cookie/crumb for v7 that v8 chart doesn't need). If it fails, we
+// silently fall back to the v8 chart endpoint for the same symbol so the
+// widget doesn't go blank.
+async function yahooQuoteWithFallback(symbol) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; QuantMonarchWidget/1.0)" },
+    });
+    if (!res.ok) throw new Error(`v7 HTTP ${res.status}`);
+    const data = await res.json();
+    const result = data?.quoteResponse?.result?.[0];
+    if (!result || result.regularMarketPrice == null) throw new Error("v7 malformed/empty");
+    return {
+      price: result.regularMarketPrice,
+      prevClose: result.regularMarketPreviousClose,
+      change: result.regularMarketChange,
+      source: "v7-quote",
+    };
+  } catch (v7err) {
+    // Fallback: v8 chart, 5-day range, derive change manually.
+    const { meta } = await yahooDaily(symbol, "5d");
+    return {
+      price: meta.regularMarketPrice,
+      prevClose: meta.chartPreviousClose,
+      change: meta.regularMarketPrice - meta.chartPreviousClose,
+      source: "v8-chart-fallback",
+      v7Error: v7err.message,
+    };
+  }
 }
 
 // ── Indicator math ──────────────────────────────────────────────────────
@@ -216,13 +264,37 @@ export default async function handler(req, res) {
     errors.dow = err.message;
   }
 
-  // ── Asia (Nikkei proxy) ───────────────────────────────────────────────
+  // ── Asia: Nikkei + Shanghai ──────────────────────────────────────────
   try {
-    const { meta } = await yahooDaily("%5EN225", "5d");
-    const chg = meta.regularMarketPrice - meta.chartPreviousClose;
-    out.ASIA = chg >= 0 ? "Positive" : "Negative";
+    const nikkei = await yahooQuoteWithFallback("%5EN225");
+    out.NIKKEI = `${nikkei.change >= 0 ? "Up" : "Down"} ${nikkei.change >= 0 ? "+" : ""}${nikkei.change.toFixed(0)}`;
+    if (nikkei.v7Error) errors.nikkeiV7 = nikkei.v7Error; // v7 failed, used v8 fallback — non-fatal
   } catch (err) {
-    errors.asia = err.message;
+    errors.nikkei = err.message;
+  }
+
+  try {
+    const shanghai = await yahooQuoteWithFallback("000001.SS");
+    out.SHANGHAI = `${shanghai.change >= 0 ? "Up" : "Down"} ${shanghai.change >= 0 ? "+" : ""}${shanghai.change.toFixed(0)}`;
+    if (shanghai.v7Error) errors.shanghaiV7 = shanghai.v7Error;
+  } catch (err) {
+    errors.shanghai = err.message;
+  }
+
+  // Composite ASIA sentiment from whichever of the two came back.
+  const asiaSignals = [out.NIKKEI, out.SHANGHAI].filter(Boolean);
+  if (asiaSignals.length) {
+    const upCount = asiaSignals.filter((s) => s.startsWith("Up")).length;
+    out.ASIA = upCount > asiaSignals.length / 2 ? "Positive" : upCount < asiaSignals.length / 2 ? "Negative" : "Mixed";
+  }
+
+  // ── Global VIX (CBOE fear gauge — distinct from India VIX below) ────────
+  try {
+    const vix = await yahooQuoteWithFallback("%5EVIX");
+    out.GLOBAL_VIX = `${vix.price.toFixed(1)} (${vix.change >= 0 ? "+" : ""}${vix.change.toFixed(1)})`;
+    if (vix.v7Error) errors.globalVixV7 = vix.v7Error;
+  } catch (err) {
+    errors.globalVix = err.message;
   }
 
   // ── Crude Oil (WTI) ───────────────────────────────────────────────────
@@ -244,7 +316,25 @@ export default async function handler(req, res) {
     errors.usdinr = err.message;
   }
 
-  // GIFT_NIFTY intentionally omitted — no available source (not on Yahoo or NSE public APIs).
+  // ── GIFT Nifty (from user-supplied Google Apps Script source) ──────────
+  try {
+    const proto = req.headers["x-forwarded-proto"] || "https";
+    const host = req.headers["host"];
+    const giftRes = await fetch(`${proto}://${host}/api/gift-nifty`);
+    if (giftRes.ok) {
+      const gift = await giftRes.json();
+      if (gift.price != null) {
+        const chg = gift.change != null ? gift.change : null;
+        out.GIFT_NIFTY = chg != null ? `${chg >= 0 ? "Gap Up" : "Gap Down"} ${chg >= 0 ? "+" : ""}${chg}` : `${gift.price}`;
+      } else {
+        errors.giftNifty = "Source reachable but price field not found — check /api/gift-nifty raw output";
+      }
+    } else {
+      errors.giftNifty = `HTTP ${giftRes.status}`;
+    }
+  } catch (err) {
+    errors.giftNifty = err.message;
+  }
 
   // ── NSE: VIX, option chain, FII ──────────────────────────────────────
   let cookie = null;
@@ -326,7 +416,7 @@ export default async function handler(req, res) {
   let bull = 0,
     bear = 0,
     counted = 0;
-  for (const key of ["EMA20", "DMA200", "RSI", "MACD", "TREND", "PREV_CANDLE", "DOW_JONES", "ASIA", "PCR", "OI_ATM", "FII"]) {
+  for (const key of ["EMA20", "DMA200", "RSI", "MACD", "TREND", "PREV_CANDLE", "DOW_JONES", "ASIA", "GIFT_NIFTY", "PCR", "OI_ATM", "FII"]) {
     const v = (out[key] || "").toLowerCase();
     if (!v || v === "n/a") continue;
     counted++;
