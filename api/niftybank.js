@@ -1,10 +1,12 @@
 // api/niftybank.js
 // Vercel serverless proxy — bypasses Yahoo Finance CORS block for browser fetches.
-// Uses the v7 quote endpoint (different shape than v8 chart, used for NIFTY 50).
+// Uses the v8 chart endpoint (same as nifty.js) — the v7 quote endpoint now
+// requires an auth cookie/crumb for unauthenticated requests, which caused
+// "Unavailable" on the earlier version of this file.
 
 export default async function handler(req, res) {
   try {
-    const url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=%5ENSEBANK";
+    const url = "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEBANK?interval=1d&range=1d";
 
     const upstream = await fetch(url, {
       headers: {
@@ -18,22 +20,24 @@ export default async function handler(req, res) {
     }
 
     const data = await upstream.json();
-    const result = data?.quoteResponse?.result?.[0];
+    const result = data?.chart?.result?.[0];
 
     if (!result) {
       return res.status(502).json({ error: "Malformed upstream response" });
     }
 
+    const meta = result.meta;
     const payload = {
       symbol: "BANK NIFTY",
-      price: result.regularMarketPrice,
-      prevClose: result.regularMarketPreviousClose,
-      change: result.regularMarketChange,
-      changePct: result.regularMarketChangePercent,
-      dayHigh: result.regularMarketDayHigh,
-      dayLow: result.regularMarketDayLow,
-      marketState: result.marketState,
-      currency: result.currency,
+      price: meta.regularMarketPrice,
+      prevClose: meta.chartPreviousClose,
+      change: meta.regularMarketPrice - meta.chartPreviousClose,
+      changePct:
+        ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100,
+      dayHigh: meta.regularMarketDayHigh,
+      dayLow: meta.regularMarketDayLow,
+      marketState: meta.marketState,
+      currency: meta.currency,
       updatedAt: new Date().toISOString()
     };
 
