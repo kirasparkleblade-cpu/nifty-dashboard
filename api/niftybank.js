@@ -2,9 +2,12 @@
 // Vercel serverless proxy for Bank Nifty spot price.
 // PRIMARY: NSE's own allIndices endpoint — same cookie handshake already
 // working reliably for VIX in nifty-bias.js.
-// FALLBACK: Yahoo v8 chart with cookie+crumb auth (see _yahoo-session.js).
-
-import { yahooFetch } from "./_yahoo-session.js";
+// FALLBACK: Yahoo v8 chart with cookie+crumb auth.
+//
+// NOTE: this file is fully self-contained (no cross-file imports) —
+// deliberately, after a cross-file import to a shared helper caused a
+// silent 500 on every single request (crashed before reaching any
+// try/catch, so no error detail even reached the response body).
 
 const NSE_BASE = "https://www.nseindia.com/";
 const NSE_HEADERS = {
@@ -14,6 +17,39 @@ const NSE_HEADERS = {
   "accept": "*/*",
   "referer": NSE_BASE,
 };
+
+const YAHOO_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+let yahooSessionCache = null;
+let yahooSessionExpiry = 0;
+
+async function getYahooSession() {
+  if (yahooSessionCache && Date.now() < yahooSessionExpiry) return yahooSessionCache;
+
+  const homeRes = await fetch("https://fc.yahoo.com", {
+    headers: { "User-Agent": YAHOO_UA },
+    redirect: "manual",
+  });
+  const setCookie = homeRes.headers.get("set-cookie") || "";
+  const cookie = setCookie
+    .split(/,(?=[^;]+?=)/)
+    .map((c) => c.split(";")[0].trim())
+    .filter(Boolean)
+    .join("; ");
+  if (!cookie) throw new Error("Yahoo cookie fetch -> no Set-Cookie returned by fc.yahoo.com");
+
+  const crumbRes = await fetch("https://query2.finance.yahoo.com/v1/test/getcrumb", {
+    headers: { "User-Agent": YAHOO_UA, cookie },
+  });
+  if (!crumbRes.ok) throw new Error(`Yahoo crumb fetch -> HTTP ${crumbRes.status}`);
+  const crumb = (await crumbRes.text()).trim();
+  if (!crumb || crumb.includes("<html")) throw new Error("Yahoo crumb fetch -> invalid crumb");
+
+  yahooSessionCache = { cookie, crumb };
+  yahooSessionExpiry = Date.now() + 10 * 60 * 1000;
+  return yahooSessionCache;
+}
 
 async function getNseCookie() {
   const homeRes = await fetch(NSE_BASE, { headers: NSE_HEADERS });
@@ -51,8 +87,13 @@ async function fetchFromNse() {
 }
 
 async function fetchFromYahoo() {
-  const url = "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEBANK?interval=1d&range=1d";
-  const upstream = await yahooFetch(url, "%5ENSEBANK");
+  const session = await getYahooSession();
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEBANK?interval=1d&range=1d&crumb=${encodeURIComponent(
+    session.crumb
+  )}`;
+  const upstream = await fetch(url, {
+    headers: { "User-Agent": YAHOO_UA, cookie: session.cookie },
+  });
   if (!upstream.ok) throw new Error(`Yahoo fallback -> HTTP ${upstream.status}`);
   const data = await upstream.json();
   const result = data?.chart?.result?.[0];
