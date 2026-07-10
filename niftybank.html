@@ -209,19 +209,23 @@ const fmt = (n) => Number(n).toLocaleString('en-IN', {
     maximumFractionDigits: 2
 });
 
+let lastGoodPrice = null; // tracks whether we've ever successfully rendered a price
+
 async function fetchPrice(){
 
     try{
 
         const response = await fetch(PROXY_URL + '?t=' + Date.now());
 
-        if(!response.ok) throw new Error();
+        if(!response.ok) throw new Error('HTTP ' + response.status);
 
         const d = await response.json();
 
         if(d.price === null || isNaN(d.price)){
-            throw new Error();
+            throw new Error('price missing from response');
         }
+
+        lastGoodPrice = d.price;
 
         const priceEl = document.getElementById('price');
         priceEl.innerText = fmt(d.price);
@@ -256,10 +260,17 @@ async function fetchPrice(){
 
         console.error(error);
 
-        document
-        .getElementById('price')
-        .innerText =
-        'Unavailable';
+        // Only replace the display with "Unavailable" if we've never had a
+        // good value. A single failed refresh (NSE/Yahoo rate-limiting for
+        // a moment) shouldn't wipe out a price that was working seconds
+        // ago — instead, keep showing the last good value and just flag
+        // it as stale so it's honest without being alarmist.
+        if(lastGoodPrice === null){
+            document.getElementById('price').innerText = 'Unavailable';
+        } else {
+            document.getElementById('updated').innerText =
+                'Refresh failed — showing last known price';
+        }
     }
 }
 
