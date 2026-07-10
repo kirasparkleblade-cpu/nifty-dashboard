@@ -44,8 +44,8 @@ async function fetchFromNse() {
     prevClose: row.previousClose,
     change: row.variation,
     changePct: row.percentChange,
-    dayHigh: row.dayHigh,
-    dayLow: row.dayLow,
+    dayHigh: row.high,
+    dayLow: row.low,
     marketState: null, // NSE allIndices doesn't expose this directly
     currency: "INR",
     updatedAt: new Date().toISOString(),
