@@ -1,102 +1,287 @@
-// api/nifty.js
-// Vercel serverless proxy for NIFTY 50 spot price.
-// PRIMARY: NSE's own allIndices endpoint — same cookie handshake already
-// working reliably for VIX in nifty-bias.js. This is the exchange's own
-// data, not a reverse-engineered scrape of a third party, so it's the more
-// durable choice long-term.
-// FALLBACK: Yahoo v8 chart with cookie+crumb auth (see _yahoo-session.js) —
-// kept in case NSE itself is rate-limiting at the moment of the request.
+<!DOCTYPE html>
+<html lang="en">
 
-import { yahooFetch } from "./_yahoo-session.js";
+<head>
 
-const NSE_BASE = "https://www.nseindia.com/";
-const NSE_HEADERS = {
-  "user-agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  "accept-language": "en-US,en;q=0.9",
-  "accept": "*/*",
-  "referer": NSE_BASE,
-};
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-async function getNseCookie() {
-  const homeRes = await fetch(NSE_BASE, { headers: NSE_HEADERS });
-  const setCookie = homeRes.headers.get("set-cookie") || "";
-  return setCookie
-    .split(/,(?=[^;]+?=)/)
-    .map((c) => c.split(";")[0].trim())
-    .filter(Boolean)
-    .join("; ");
+<title>BANK NIFTY Widget</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+
+html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#ffffff;
+    font-family:'Space Grotesk',sans-serif;
 }
 
-async function fetchFromNse() {
-  const cookie = await getNseCookie();
-  const res = await fetch("https://www.nseindia.com/api/allIndices", {
-    headers: { ...NSE_HEADERS, cookie },
-  });
-  if (!res.ok) throw new Error(`NSE allIndices -> HTTP ${res.status}`);
-  const data = await res.json();
-  const row = data?.data?.find((i) => (i.index || "").toUpperCase() === "NIFTY 50");
-  if (!row) throw new Error("NSE allIndices -> NIFTY 50 row not found");
-
-  return {
-    symbol: "NIFTY 50",
-    price: row.last,
-    prevClose: row.previousClose,
-    change: row.variation,
-    changePct: row.percentChange,
-    dayHigh: row.high,
-    dayLow: row.low,
-    marketState: null, // NSE allIndices doesn't expose this directly
-    currency: "INR",
-    updatedAt: new Date().toISOString(),
-    source: "nse-allIndices",
-  };
+body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
-async function fetchFromYahoo() {
-  const url = "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=1d&range=1d";
-  const upstream = await yahooFetch(url, "%5ENSEI");
-  if (!upstream.ok) throw new Error(`Yahoo fallback -> HTTP ${upstream.status}`);
-  const data = await upstream.json();
-  const result = data?.chart?.result?.[0];
-  if (!result) throw new Error("Yahoo fallback -> malformed response");
-  const meta = result.meta;
+.widget {
 
-  return {
-    symbol: "NIFTY 50",
-    price: meta.regularMarketPrice,
-    prevClose: meta.chartPreviousClose,
-    change: meta.regularMarketPrice - meta.chartPreviousClose,
-    changePct: ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100,
-    dayHigh: meta.regularMarketDayHigh,
-    dayLow: meta.regularMarketDayLow,
-    marketState: meta.marketState,
-    currency: meta.currency,
-    updatedAt: new Date().toISOString(),
-    source: "yahoo-v8-chart",
-  };
+    width: 92vw;
+    height: 82vh;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e5e5;
+
+    border-radius: 32px;
+
+    padding: 42px;
+
+    box-sizing: border-box;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    gap: 22px;
 }
 
-export default async function handler(req, res) {
-  let payload;
-  let nseError = null;
+.header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+}
 
-  try {
-    payload = await fetchFromNse();
-  } catch (err) {
-    nseError = err.message;
-    try {
-      payload = await fetchFromYahoo();
-    } catch (yahooErr) {
-      return res.status(502).json({
-        error: "Both NSE and Yahoo fetch failed",
-        nseError,
-        yahooError: yahooErr.message,
-      });
+.header-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.label{
+    color:#6b6b6f;
+    font-size:clamp(18px,1.5vw,28px);
+    font-weight:500;
+    letter-spacing:1px;
+    text-transform:uppercase;
+}
+
+.market-state{
+    font-size:clamp(10px,0.9vw,13px);
+    font-weight:500;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    color:#9a9a9e;
+    border:1px solid #e5e5e5;
+    border-radius:20px;
+    padding:3px 10px;
+}
+
+.refresh-btn{
+    width:28px;
+    height:28px;
+    border:1px solid #e5e5e5;
+    border-radius:50%;
+    background:#fff;
+    cursor:pointer;
+    color:#777;
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.refresh-btn:hover{
+    background:#f7f7f7;
+}
+
+.price {
+
+    color: #111111;
+
+    font-size: clamp(42px, 5vw, 72px);
+
+    font-weight: 700;
+
+    line-height: 1.1;
+
+    letter-spacing: -2px;
+
+    font-variant-numeric:
+      tabular-nums lining-nums;
+
+    white-space: nowrap;
+}
+
+.change-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    font-size:clamp(16px,1.6vw,22px);
+    font-weight:500;
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+.change-row .updated{
+    color:#9a9a9e;
+    font-size:clamp(12px,1vw,15px);
+    font-weight:400;
+}
+
+.stats-row{
+    display:flex;
+    gap:32px;
+    font-size:clamp(13px,1.1vw,16px);
+    color:#9a9a9e;
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+.stats-row .stat span{
+    display:block;
+    color:#111111;
+    font-weight:500;
+    margin-top:2px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="widget">
+
+    <div class="header">
+
+        <div class="header-left">
+            <div class="label">
+                BANK NIFTY
+            </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div class="market-state" id="marketState">—</div>
+            <button
+                class="refresh-btn"
+                onclick="fetchPrice()">
+                ↻
+            </button>
+        </div>
+
+    </div>
+
+    <div
+        class="price"
+        id="price">
+        Loading...
+    </div>
+
+    <div class="change-row">
+        <span id="change">—</span>
+        <span class="updated" id="updated"></span>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat">Day High<span id="dayHigh">—</span></div>
+        <div class="stat">Day Low<span id="dayLow">—</span></div>
+        <div class="stat">Prev Close<span id="prevClose">—</span></div>
+    </div>
+
+</div>
+
+<script>
+
+// Same-project relative path — Vercel serves api/niftybank.js at /api/niftybank automatically.
+const PROXY_URL = '/api/niftybank';
+
+const fmt = (n) => Number(n).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+});
+
+let lastGoodPrice = null; // tracks whether we've ever successfully rendered a price
+
+async function fetchPrice(){
+
+    try{
+
+        const response = await fetch(PROXY_URL + '?t=' + Date.now());
+
+        if(!response.ok) throw new Error('HTTP ' + response.status);
+
+        const d = await response.json();
+
+        if(d.price === null || isNaN(d.price)){
+            throw new Error('price missing from response');
+        }
+
+        lastGoodPrice = d.price;
+
+        const priceEl = document.getElementById('price');
+        priceEl.innerText = fmt(d.price);
+
+        const isUp = d.change >= 0;
+        priceEl.style.color = isUp
+            ? (d.change === 0 ? '#111111' : '#16a34a')
+            : '#dc2626';
+
+        const changeEl = document.getElementById('change');
+        changeEl.innerText =
+            (isUp ? '+' : '') + fmt(d.change) +
+            ' (' + (isUp ? '+' : '') + d.changePct.toFixed(2) + '%)';
+        changeEl.style.color = priceEl.style.color;
+
+        document.getElementById('dayHigh').innerText = fmt(d.dayHigh);
+        document.getElementById('dayLow').innerText = fmt(d.dayLow);
+        document.getElementById('prevClose').innerText = fmt(d.prevClose);
+
+        const stateEl = document.getElementById('marketState');
+        const state = (d.marketState || '').toUpperCase();
+        stateEl.innerText = state === 'REGULAR' ? 'Open' : (state || '—');
+
+        document.getElementById('updated').innerText =
+            'Updated ' + new Date(d.updatedAt).toLocaleTimeString('en-IN', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+
     }
-  }
 
-  res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  return res.status(200).json(payload);
+    catch(error){
+
+        console.error(error);
+
+        // Only replace the display with "Unavailable" if we've never had a
+        // good value. A single failed refresh (NSE/Yahoo rate-limiting for
+        // a moment) shouldn't wipe out a price that was working seconds
+        // ago — instead, keep showing the last good value and just flag
+        // it as stale so it's honest without being alarmist.
+        if(lastGoodPrice === null){
+            document.getElementById('price').innerText = 'Unavailable';
+        } else {
+            document.getElementById('updated').innerText =
+                'Refresh failed — showing last known price';
+        }
+    }
 }
+
+fetchPrice();
+
+setInterval(
+    fetchPrice,
+    15000
+);
+
+</script>
+
+</body>
+</html>
