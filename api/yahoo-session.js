@@ -18,8 +18,12 @@ let sessionExpiry = 0;
 async function getYahooSession() {
   if (sessionCache && Date.now() < sessionExpiry) return sessionCache;
 
-  const homeRes = await fetch("https://finance.yahoo.com", {
+  // fc.yahoo.com is the endpoint that actually sets a crumb-eligible cookie
+  // post-2024 — finance.yahoo.com's homepage cookie is not sufficient and
+  // returns 401 on getcrumb even though the cookie looks valid.
+  const homeRes = await fetch("https://fc.yahoo.com", {
     headers: { "User-Agent": YAHOO_UA },
+    redirect: "manual",
   });
   const setCookie = homeRes.headers.get("set-cookie") || "";
   const cookie = setCookie
@@ -28,7 +32,11 @@ async function getYahooSession() {
     .filter(Boolean)
     .join("; ");
 
-  const crumbRes = await fetch("https://query1.finance.yahoo.com/v1/test/getcrumb", {
+  if (!cookie) throw new Error("Yahoo cookie fetch -> no Set-Cookie returned by fc.yahoo.com");
+
+  // query2 (not query1) is the host that reliably accepts this cookie for
+  // crumb issuance in current testing.
+  const crumbRes = await fetch("https://query2.finance.yahoo.com/v1/test/getcrumb", {
     headers: { "User-Agent": YAHOO_UA, cookie },
   });
   if (!crumbRes.ok) throw new Error(`Yahoo crumb fetch -> HTTP ${crumbRes.status}`);
