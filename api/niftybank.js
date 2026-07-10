@@ -1,48 +1,99 @@
 // api/niftybank.js
-// Vercel serverless proxy — bypasses Yahoo Finance CORS block for browser fetches.
-// Uses the v8 chart endpoint (same as nifty.js). ^NSEBANK is an index
-// ticker — Yahoo requires a session cookie + crumb for these now.
-// See api/_yahoo-session.js for the shared auth helper.
+// Vercel serverless proxy for Bank Nifty spot price.
+// PRIMARY: NSE's own allIndices endpoint — same cookie handshake already
+// working reliably for VIX in nifty-bias.js.
+// FALLBACK: Yahoo v8 chart with cookie+crumb auth (see _yahoo-session.js).
 
 import { yahooFetch } from "./_yahoo-session.js";
 
+const NSE_BASE = "https://www.nseindia.com/";
+const NSE_HEADERS = {
+  "user-agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  "accept-language": "en-US,en;q=0.9",
+  "accept": "*/*",
+  "referer": NSE_BASE,
+};
+
+async function getNseCookie() {
+  const homeRes = await fetch(NSE_BASE, { headers: NSE_HEADERS });
+  const setCookie = homeRes.headers.get("set-cookie") || "";
+  return setCookie
+    .split(/,(?=[^;]+?=)/)
+    .map((c) => c.split(";")[0].trim())
+    .filter(Boolean)
+    .join("; ");
+}
+
+async function fetchFromNse() {
+  const cookie = await getNseCookie();
+  const res = await fetch("https://www.nseindia.com/api/allIndices", {
+    headers: { ...NSE_HEADERS, cookie },
+  });
+  if (!res.ok) throw new Error(`NSE allIndices -> HTTP ${res.status}`);
+  const data = await res.json();
+  const row = data?.data?.find((i) => (i.index || "").toUpperCase() === "NIFTY BANK");
+  if (!row) throw new Error("NSE allIndices -> NIFTY BANK row not found");
+
+  return {
+    symbol: "BANK NIFTY",
+    price: row.last,
+    prevClose: row.previousClose,
+    change: row.variation,
+    changePct: row.percentChange,
+    dayHigh: row.dayHigh,
+    dayLow: row.dayLow,
+    marketState: null,
+    currency: "INR",
+    updatedAt: new Date().toISOString(),
+    source: "nse-allIndices",
+  };
+}
+
+async function fetchFromYahoo() {
+  const url = "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEBANK?interval=1d&range=1d";
+  const upstream = await yahooFetch(url, "%5ENSEBANK");
+  if (!upstream.ok) throw new Error(`Yahoo fallback -> HTTP ${upstream.status}`);
+  const data = await upstream.json();
+  const result = data?.chart?.result?.[0];
+  if (!result) throw new Error("Yahoo fallback -> malformed response");
+  const meta = result.meta;
+
+  return {
+    symbol: "BANK NIFTY",
+    price: meta.regularMarketPrice,
+    prevClose: meta.chartPreviousClose,
+    change: meta.regularMarketPrice - meta.chartPreviousClose,
+    changePct: ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100,
+    dayHigh: meta.regularMarketDayHigh,
+    dayLow: meta.regularMarketDayLow,
+    marketState: meta.marketState,
+    currency: meta.currency,
+    updatedAt: new Date().toISOString(),
+    source: "yahoo-v8-chart",
+  };
+}
+
 export default async function handler(req, res) {
+  let payload;
+  let nseError = null;
+
   try {
-    const url = "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEBANK?interval=1d&range=1d";
-
-    const upstream = await yahooFetch(url, "%5ENSEBANK");
-
-    if (!upstream.ok) {
-      return res.status(upstream.status).json({ error: "Upstream fetch failed" });
-    }
-
-    const data = await upstream.json();
-    const result = data?.chart?.result?.[0];
-
-    if (!result) {
-      return res.status(502).json({ error: "Malformed upstream response" });
-    }
-
-    const meta = result.meta;
-    const payload = {
-      symbol: "BANK NIFTY",
-      price: meta.regularMarketPrice,
-      prevClose: meta.chartPreviousClose,
-      change: meta.regularMarketPrice - meta.chartPreviousClose,
-      changePct:
-        ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100,
-      dayHigh: meta.regularMarketDayHigh,
-      dayLow: meta.regularMarketDayLow,
-      marketState: meta.marketState,
-      currency: meta.currency,
-      updatedAt: new Date().toISOString()
-    };
-
-    // Cache at the edge for 15s so you don't hammer Yahoo on every viewer load
-    res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    return res.status(200).json(payload);
+    payload = await fetchFromNse();
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    nseError = err.message;
+    try {
+      payload = await fetchFromYahoo();
+    } catch (yahooErr) {
+      return res.status(502).json({
+        error: "Both NSE and Yahoo fetch failed",
+        nseError,
+        yahooError: yahooErr.message,
+      });
+    }
   }
+
+  res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  return res.status(200).json(payload);
 }
