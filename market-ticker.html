@@ -33,27 +33,30 @@
   .updated-txt { font-size:10px; color:#aaa; font-family:'DM Mono',monospace; }
 
   .scroll-row {
-    flex:1; display:flex; align-items:center; gap:10px;
-    overflow-x:auto; overflow-y:hidden;
-    padding:12px 14px;
+    flex:1; display:flex; flex-direction:column; gap:6px;
+    overflow-y:auto; overflow-x:hidden;
+    padding:10px 12px;
     scrollbar-width:thin;
   }
-  .scroll-row::-webkit-scrollbar { height:4px; }
+  .scroll-row::-webkit-scrollbar { width:4px; }
   .scroll-row::-webkit-scrollbar-thumb { background:#ddd; border-radius:99px; }
 
   .item {
     flex:0 0 auto;
     background:#f9f9f9; border:1px solid #ececec; border-radius:10px;
     padding:10px 14px;
-    min-width:120px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
     transition:box-shadow .15s, border-color .15s;
   }
   .item:hover { box-shadow:0 2px 8px rgba(0,0,0,.06); border-color:#ddd; }
 
   .item-label {
-    font-size:10px; font-weight:500; color:#888;
+    font-size:12px; font-weight:500; color:#555;
     white-space:nowrap; text-overflow:ellipsis; overflow:hidden;
-    margin-bottom:4px;
+    flex:1; min-width:0;
+  }
+  .item-right {
+    display:flex; align-items:baseline; gap:10px; flex-shrink:0;
   }
   .item-price {
     font-family:'DM Mono',monospace; font-size:14px; font-weight:500; color:#111;
@@ -61,7 +64,7 @@
   }
   .item-change {
     font-family:'DM Mono',monospace; font-size:11px; font-weight:500;
-    margin-top:2px; white-space:nowrap;
+    white-space:nowrap; min-width:64px; text-align:right;
   }
   .item-change.up { color:#16a34a; }
   .item-change.down { color:#dc2626; }
@@ -122,8 +125,10 @@ function render(items) {
     card.className = 'item';
     card.innerHTML = `
       <div class="item-label">${it.label}</div>
-      <div class="item-price">${fmtPrice(it.price, it.currency)}</div>
-      <div class="item-change ${cls}">${sign}${it.changePct.toFixed(2)}%</div>
+      <div class="item-right">
+        <div class="item-price">${fmtPrice(it.price, it.currency)}</div>
+        <div class="item-change ${cls}">${sign}${it.changePct.toFixed(2)}%</div>
+      </div>
     `;
     row.appendChild(card);
   }
