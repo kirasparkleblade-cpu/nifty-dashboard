@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Ticker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    background:transparent; color:#111; font-family:'DM Sans',sans-serif;
+    width:100%; height:100%; overflow:hidden;
+  }
+
+  .wrap {
+    width:100%; height:100%;
+    background:#fff; border:1px solid #e8e8e8; border-radius:12px;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  .hdr {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px; border-bottom:1px solid #eee; flex-shrink:0;
+  }
+  .hdr-left { display:flex; align-items:center; gap:8px; }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:#22c55e; animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse {
+    0%  { box-shadow:0 0 0 0 rgba(34,197,94,.5); }
+    70% { box-shadow:0 0 0 5px rgba(34,197,94,0); }
+    100%{ box-shadow:0 0 0 0 rgba(34,197,94,0); }
+  }
+  .hdr-title { font-size:11px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; color:#111; }
+  .updated-txt { font-size:10px; color:#aaa; font-family:'DM Mono',monospace; }
+
+  .scroll-row {
+    flex:1; display:flex; align-items:center; gap:10px;
+    overflow-x:auto; overflow-y:hidden;
+    padding:12px 14px;
+    scrollbar-width:thin;
+  }
+  .scroll-row::-webkit-scrollbar { height:4px; }
+  .scroll-row::-webkit-scrollbar-thumb { background:#ddd; border-radius:99px; }
+
+  .item {
+    flex:0 0 auto;
+    background:#f9f9f9; border:1px solid #ececec; border-radius:10px;
+    padding:10px 14px;
+    min-width:120px;
+    transition:box-shadow .15s, border-color .15s;
+  }
+  .item:hover { box-shadow:0 2px 8px rgba(0,0,0,.06); border-color:#ddd; }
+
+  .item-label {
+    font-size:10px; font-weight:500; color:#888;
+    white-space:nowrap; text-overflow:ellipsis; overflow:hidden;
+    margin-bottom:4px;
+  }
+  .item-price {
+    font-family:'DM Mono',monospace; font-size:14px; font-weight:500; color:#111;
+    white-space:nowrap;
+  }
+  .item-change {
+    font-family:'DM Mono',monospace; font-size:11px; font-weight:500;
+    margin-top:2px; white-space:nowrap;
+  }
+  .item-change.up { color:#16a34a; }
+  .item-change.down { color:#dc2626; }
+  .item-change.flat { color:#888; }
+
+  .state-box {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:8px; color:#aaa; font-size:12px; padding:20px;
+  }
+  .dots{display:flex;gap:5px;}
+  .dots span{width:5px;height:5px;border-radius:50%;background:#ccc;animation:dp 1.2s ease-in-out infinite;}
+  .dots span:nth-child(2){animation-delay:.2s;}
+  .dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes dp{0%,100%{opacity:.2;transform:scale(.7);}50%{opacity:1;transform:scale(1);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="live-dot"></div>
+      <div class="hdr-title">Markets</div>
+    </div>
+    <div class="updated-txt" id="updatedTxt">—</div>
+  </div>
+  <div id="content" style="flex:1;min-height:0;display:flex;">
+    <div class="state-box">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div>Loading live prices…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = '/api/market-ticker';
+
+function fmtPrice(price, currency) {
+  const decimals = Math.abs(price) < 10 ? 4 : Math.abs(price) < 1000 ? 2 : 2;
+  const formatted = price.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+  if (currency === 'USD' && price > 1000) return '$' + formatted;
+  return formatted;
+}
+
+function render(items) {
+  const row = document.createElement('div');
+  row.className = 'scroll-row';
+
+  for (const it of items) {
+    const isUp = it.change > 0;
+    const isDown = it.change < 0;
+    const cls = isUp ? 'up' : (isDown ? 'down' : 'flat');
+    const sign = it.change >= 0 ? '+' : '';
+
+    const card = document.createElement('div');
+    card.className = 'item';
+    card.innerHTML = `
+      <div class="item-label">${it.label}</div>
+      <div class="item-price">${fmtPrice(it.price, it.currency)}</div>
+      <div class="item-change ${cls}">${sign}${it.changePct.toFixed(2)}%</div>
+    `;
+    row.appendChild(card);
+  }
+
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+  content.appendChild(row);
+}
+
+function showError(msg) {
+  document.getElementById('content').innerHTML =
+    `<div class="state-box"><div>⚠️ ${msg}</div></div>`;
+}
+
+async function loadTicker() {
+  try {
+    const res = await fetch(API_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if (!d.items || !d.items.length) throw new Error('No instruments returned');
+
+    render(d.items);
+    document.getElementById('updatedTxt').textContent =
+      'Updated ' + new Date(d.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) +
+      (d.missing && d.missing.length ? ` · ${d.missing.length} unavailable` : '');
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+loadTicker();
+setInterval(loadTicker, 30000);
+</script>
+</body>
+</html>
