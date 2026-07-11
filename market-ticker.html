@@ -32,6 +32,17 @@
   .hdr-title { font-size:11px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; color:#111; }
   .updated-txt { font-size:10px; color:#aaa; font-family:'DM Mono',monospace; }
 
+  .missing-note {
+    font-size:10px; color:#b45309; font-family:'DM Mono',monospace;
+    padding:0 14px 8px; cursor:pointer;
+  }
+  .missing-note .toggle { text-decoration:underline; }
+  .missing-list {
+    display:none; font-size:10px; color:#888; padding:0 14px 8px;
+    line-height:1.6;
+  }
+  .missing-list.show { display:block; }
+
   .scroll-row {
     flex:1; display:flex; flex-direction:column; gap:6px;
     overflow-y:auto; overflow-x:hidden;
@@ -90,6 +101,10 @@
     </div>
     <div class="updated-txt" id="updatedTxt">—</div>
   </div>
+  <div class="missing-note" id="missingNote" style="display:none;" onclick="toggleMissing()">
+    <span id="missingCount"></span> — <span class="toggle" id="missingToggle">show</span>
+  </div>
+  <div class="missing-list" id="missingList"></div>
   <div id="content" style="flex:1;min-height:0;display:flex;">
     <div class="state-box">
       <div class="dots"><span></span><span></span><span></span></div>
@@ -143,6 +158,13 @@ function showError(msg) {
     `<div class="state-box"><div>⚠️ ${msg}</div></div>`;
 }
 
+function toggleMissing() {
+  const list = document.getElementById('missingList');
+  const toggle = document.getElementById('missingToggle');
+  const isShown = list.classList.toggle('show');
+  toggle.textContent = isShown ? 'hide' : 'show';
+}
+
 async function loadTicker() {
   try {
     const res = await fetch(API_URL + '?t=' + Date.now());
@@ -152,8 +174,16 @@ async function loadTicker() {
 
     render(d.items);
     document.getElementById('updatedTxt').textContent =
-      'Updated ' + new Date(d.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) +
-      (d.missing && d.missing.length ? ` · ${d.missing.length} unavailable` : '');
+      'Updated ' + new Date(d.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+    const missingNote = document.getElementById('missingNote');
+    if (d.missing && d.missing.length) {
+      missingNote.style.display = 'block';
+      document.getElementById('missingCount').textContent = d.missing.length + ' unavailable';
+      document.getElementById('missingList').textContent = d.missing.join(', ');
+    } else {
+      missingNote.style.display = 'none';
+    }
   } catch (err) {
     showError(err.message);
   }
