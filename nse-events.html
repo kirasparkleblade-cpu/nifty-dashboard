@@ -210,8 +210,12 @@ function showError(msg) {
 async function loadEvents() {
   try {
     const res = await fetch(API_URL + '?t=' + Date.now());
-    if (!res.ok) throw new Error('Proxy fetch failed: HTTP ' + res.status);
-    const d = await res.json();
+    const d = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const detail = d?.error ? `${d.error}${d.bodySnippet ? ' — ' + d.bodySnippet.slice(0,120) : ''}` : ('HTTP ' + res.status);
+      throw new Error(detail);
+    }
     if (!d.events || !d.events.length) throw new Error('No events returned — NSE may be rate-limiting or field mapping needs adjusting');
     renderEvents(d.events, d.updatedAt);
   } catch (err) {
