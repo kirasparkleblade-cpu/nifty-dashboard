@@ -24,6 +24,13 @@
 import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
 
+// Required on Vercel's runtime — without this, @sparticuz/chromium tries to
+// load graphics libraries (libnss3.so and similar) that aren't present,
+// causing "error while loading shared libraries" on launch. Must be set
+// before .args/.executablePath() are accessed below.
+chromium.setHeadlessMode = true;
+chromium.setGraphicsMode = false;
+
 const REAL_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
