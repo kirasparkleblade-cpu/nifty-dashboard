@@ -16,9 +16,21 @@ const BROWSER_HEADERS = {
   "user-agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   "accept-language": "en-US,en;q=0.9",
-  "accept": "*/*",
+  "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "accept-encoding": "gzip, deflate, br",
   "referer": BASE_URL,
+};
+
+// NSE's own frontend sends these on the actual XHR call to /api/* endpoints —
+// a bare server-to-server request without them is one of the easier ways
+// for their WAF to tell it isn't a real browser tab making the call.
+const API_HEADERS = {
+  ...BROWSER_HEADERS,
+  accept: "application/json, text/plain, */*",
+  "x-requested-with": "XMLHttpRequest",
+  "sec-fetch-site": "same-origin",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
 };
 
 function formatDDMMYYYY(d) {
@@ -72,7 +84,7 @@ export default async function handler(req, res) {
 
     const upstream = await fetch(url, {
       headers: {
-        ...BROWSER_HEADERS,
+        ...API_HEADERS,
         cookie: cookieHeader,
       },
     });
@@ -84,7 +96,19 @@ export default async function handler(req, res) {
       });
     }
 
-    const data = await upstream.json();
+    const rawText = await upstream.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      // NSE returned something that isn't JSON — almost always a bot-block
+      // or captcha HTML page even on a 200 status. Surface a snippet so we
+      // can see exactly what it was instead of a generic parse error.
+      return res.status(502).json({
+        error: "NSE returned non-JSON response (likely a bot-block page)",
+        bodySnippet: rawText.slice(0, 300),
+      });
+    }
     const list = Array.isArray(data) ? data : data?.data || [];
 
     const events = list.map((ev) => {
