@@ -1,37 +1,31 @@
 // api/nse-events.js
-// NSE blocks direct/unauthenticated hits to its API — it requires a session
-// cookie obtained by first visiting the homepage with browser-like headers.
-// This proxy replicates that handshake, then calls event-calendar.
+// NSE's event-calendar endpoint sits behind a JS-based bot challenge
+// (Akamai/PerimeterX-style — a page with <meta content="noindex, nofollow">
+// that requires executing JavaScript to pass). A plain fetch() with headers
+// and cookies can't solve that — there's no JS engine running to solve the
+// challenge. This uses a real (headless) Chromium via Puppeteer instead.
 //
-// NOTE: NSE does not publish a schema for this endpoint and its field names
-// have changed before without notice. This handler tries several likely key
-// names per event and also returns `raw` (first 2 records untouched) so you
-// can see the real shape and adjust FIELD MAPPING below in one place if a
-// field comes back empty.
+// IMPORTANT DESIGN CHOICE: the entire request — not just cookie collection —
+// happens inside the browser context. We navigate the actual browser to the
+// homepage (to pass the challenge), then navigate that SAME browser to the
+// API URL and read the page body. We deliberately do NOT extract cookies
+// and make a separate plain fetch() afterward — bot detection like this
+// often fingerprints the TLS/HTTP handshake itself, not just cookies, so a
+// bare Node fetch() could still get blocked even with valid cookies.
+//
+// REQUIRES: @sparticuz/chromium + puppeteer-core in package.json, and
+// vercel.json giving this specific function more time/memory (browser
+// launches are slow and memory-hungry compared to a normal fetch).
+//
+// KNOWN RISK: @sparticuz/chromium's bundled binary is close to Vercel's
+// deployment size limit on the Hobby plan. If deployment fails with a size
+// error, that's the Hobby plan's ~50MB function limit — Pro plan raises it.
 
-const BASE_URL = "https://www.nseindia.com/";
-const EVENT_URL = "https://www.nseindia.com/api/event-calendar";
+import chromium from "@sparticuz/chromium";
+import puppeteer from "puppeteer-core";
 
-const BROWSER_HEADERS = {
-  "user-agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  "accept-language": "en-US,en;q=0.9",
-  "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  "accept-encoding": "gzip, deflate, br",
-  "referer": BASE_URL,
-};
-
-// NSE's own frontend sends these on the actual XHR call to /api/* endpoints —
-// a bare server-to-server request without them is one of the easier ways
-// for their WAF to tell it isn't a real browser tab making the call.
-const API_HEADERS = {
-  ...BROWSER_HEADERS,
-  accept: "application/json, text/plain, */*",
-  "x-requested-with": "XMLHttpRequest",
-  "sec-fetch-site": "same-origin",
-  "sec-fetch-mode": "cors",
-  "sec-fetch-dest": "empty",
-};
+const REAL_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 function formatDDMMYYYY(d) {
   const dd = String(d.getDate()).padStart(2, "0");
@@ -47,7 +41,6 @@ function pick(obj, keys) {
   return null;
 }
 
-// Best-effort category detection from the event's purpose/subject text.
 function categorize(text) {
   const t = (text || "").toLowerCase();
   if (t.includes("result")) return "Earnings";
@@ -56,6 +49,35 @@ function categorize(text) {
   if (t.includes("agm") || t.includes("egm") || t.includes("annual general") || t.includes("general meeting")) return "AGM/EGM";
   if (t.includes("board meeting") || t.includes("bm ")) return "Board Meeting";
   return "Other";
+}
+
+async function fetchViaBrowser(eventUrl) {
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setUserAgent(REAL_UA);
+    await page.setExtraHTTPHeaders({ "accept-language": "en-US,en;q=0.9" });
+
+    // Step 1: visit the homepage in a real browser context — this is what
+    // lets the challenge JS execute and the session get marked as human.
+    await page.goto("https://www.nseindia.com/", { waitUntil: "networkidle2", timeout: 30000 });
+    // Give any challenge JS a moment to finish running and set cookies.
+    await new Promise((r) => setTimeout(r, 3000));
+
+    // Step 2: navigate the SAME browser session to the actual API URL.
+    await page.goto(eventUrl, { waitUntil: "networkidle2", timeout: 30000 });
+    const bodyText = await page.evaluate(() => document.body.innerText);
+
+    return bodyText;
+  } finally {
+    await browser.close();
+  }
 }
 
 export default async function handler(req, res) {
@@ -68,47 +90,22 @@ export default async function handler(req, res) {
     const toDate = req.query?.to_date || formatDDMMYYYY(to);
     const index = req.query?.index || "equities";
 
-    // Step 1: hit the homepage to get a session cookie.
-    const homeRes = await fetch(BASE_URL, { headers: BROWSER_HEADERS });
-    const setCookie = homeRes.headers.get("set-cookie") || "";
-    // Node's fetch collapses multiple Set-Cookie headers into one string
-    // separated by commas in some runtimes — extract name=value pairs safely.
-    const cookieHeader = setCookie
-      .split(/,(?=[^;]+?=)/)
-      .map((c) => c.split(";")[0].trim())
-      .filter(Boolean)
-      .join("; ");
+    const eventUrl = `https://www.nseindia.com/api/event-calendar?index=${encodeURIComponent(
+      index
+    )}&from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`;
 
-    // Step 2: call the actual event-calendar endpoint with that cookie.
-    const url = `${EVENT_URL}?index=${encodeURIComponent(index)}&from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`;
+    const rawText = await fetchViaBrowser(eventUrl);
 
-    const upstream = await fetch(url, {
-      headers: {
-        ...API_HEADERS,
-        cookie: cookieHeader,
-      },
-    });
-
-    if (!upstream.ok) {
-      return res.status(upstream.status).json({
-        error: "Upstream fetch failed",
-        status: upstream.status,
-      });
-    }
-
-    const rawText = await upstream.text();
     let data;
     try {
       data = JSON.parse(rawText);
     } catch {
-      // NSE returned something that isn't JSON — almost always a bot-block
-      // or captcha HTML page even on a 200 status. Surface a snippet so we
-      // can see exactly what it was instead of a generic parse error.
       return res.status(502).json({
-        error: "NSE returned non-JSON response (likely a bot-block page)",
+        error: "NSE returned non-JSON even via headless browser — challenge may have changed",
         bodySnippet: rawText.slice(0, 300),
       });
     }
+
     const list = Array.isArray(data) ? data : data?.data || [];
 
     const events = list.map((ev) => {
@@ -121,7 +118,7 @@ export default async function handler(req, res) {
         symbol,
         company,
         purpose,
-        date, // raw NSE date string, format may be DD-MMM-YYYY
+        date,
         category: categorize(purpose),
       };
     });
@@ -132,7 +129,7 @@ export default async function handler(req, res) {
       count: events.length,
       updatedAt: new Date().toISOString(),
       events,
-      raw: list.slice(0, 2), // debug aid — remove once field mapping is confirmed
+      raw: list.slice(0, 2),
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
