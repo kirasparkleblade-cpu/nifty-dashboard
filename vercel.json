@@ -2,7 +2,8 @@
   "functions": {
     "api/nse-events.js": {
       "maxDuration": 60,
-      "memory": 1536
+      "memory": 1536,
+      "includeFiles": "node_modules/@sparticuz/chromium/**"
     }
   }
 }
