@@ -1,8 +1,8 @@
 {
-  "crons": [
-    {
-      "path": "/api/refresh-events",
-      "schedule": "30 0 * * 1"
+  "functions": {
+    "api/nse-events.js": {
+      "maxDuration": 60,
+      "memory": 1536
     }
-  ]
+  }
 }
